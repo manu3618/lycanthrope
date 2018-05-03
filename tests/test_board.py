@@ -8,7 +8,7 @@ import pytest
 
 import lycanthrope
 import mock
-from lycanthrope import MAX_ROLE_NB
+from lycanthrope.game import MAX_ROLE_NB
 
 # Persistent file for IRC-base interactions
 MOCK_IRC_FILE = tempfile.NamedTemporaryFile(prefix='lycanthrope-').name
@@ -96,7 +96,7 @@ async def test_notify_roles(players):
     with open(MOCK_IRC_FILE, 'a') as fd:
         fd.write("\n===== TEST test_notify_roles =====\n")
 
-    with mock.patch('lycanthrope.notify_player', new=mock_notify_player):
+    with mock.patch('lycanthrope.game.notify_player', new=mock_notify_player):
         game = lycanthrope.Game()
         for player in players:
             game.add_player(player)
@@ -115,8 +115,8 @@ async def test_turns(players, run):
     with open(MOCK_IRC_FILE, 'a') as fd:
         fd.write("\n===== TEST test_turns =====\n")
 
-    with mock.patch('lycanthrope.notify_player', new=mock_notify_player):
-        with mock.patch('lycanthrope.get_choice', new=mock_get_choice):
+    with mock.patch('lycanthrope.game.notify_player', new=mock_notify_player):
+        with mock.patch('lycanthrope.game.get_choice', new=mock_get_choice):
 
             # init game
             game = lycanthrope.Game()
@@ -150,8 +150,8 @@ async def test_night(players, run):
     with open(MOCK_IRC_FILE, 'a') as fd:
         fd.write("\n===== TEST night =====\n")
 
-    with mock.patch('lycanthrope.notify_player', new=mock_notify_player):
-        with mock.patch('lycanthrope.get_choice', new=mock_get_choice):
+    with mock.patch('lycanthrope.game.notify_player', new=mock_notify_player):
+        with mock.patch('lycanthrope.game.get_choice', new=mock_get_choice):
 
             # init game
             game = lycanthrope.Game()
