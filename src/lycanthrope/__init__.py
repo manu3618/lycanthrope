@@ -431,7 +431,8 @@ async def notify_player(player, msg):
     """Deliver a message to a player.
 
     Args:
-        player (string): nick of player to warn.
+        player (string): nick of player to warn. If None, the message is
+    delivered on default channel.
         msg (string): message to deliver.
     """
     raise NotImplemented
