@@ -38,7 +38,7 @@ async def mock_get_choice(player, choices):
     Return:
         A random choice
     """
-    await asyncio.sleep(randint(0, 10)/10)
+    await asyncio.sleep(randint(0, 10)/100)
     cho = choice(choices)
     with open(MOCK_IRC_FILE, 'a') as fd:
         fd.write("- {} \tchoose \t{} \t({})\n".format(player, cho, choices))
@@ -52,7 +52,7 @@ async def mock_notify_player(player, msg):
         player (string): unused
         msg (string): message to deliver
     """
-    await asyncio.sleep(randint(0, 10)/10)
+    await asyncio.sleep(randint(0, 10)/100)
     with open(MOCK_IRC_FILE, 'a') as fd:
         fd.write(" --> [{}]\t{}\n".format(player, msg))
 
