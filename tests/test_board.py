@@ -94,7 +94,7 @@ async def test_notify_roles(players):
         players (string): players
     """
     with open(MOCK_IRC_FILE, 'a') as fd:
-        fd.write("===== TEST test_notify_roles ======\n")
+        fd.write("\n===== TEST test_notify_roles =====\n")
 
     with mock.patch('lycanthrope.notify_player', new=mock_notify_player):
         game = lycanthrope.Game()
@@ -113,7 +113,7 @@ async def test_notify_roles(players):
 async def test_turns(players, run):
     """Test player turn."""
     with open(MOCK_IRC_FILE, 'a') as fd:
-        fd.write("===== TEST test_turns =====\n")
+        fd.write("\n===== TEST test_turns =====\n")
 
     with mock.patch('lycanthrope.notify_player', new=mock_notify_player):
         with mock.patch('lycanthrope.get_choice', new=mock_get_choice):
@@ -140,3 +140,35 @@ async def test_turns(players, run):
                         fd.write("- switches: {}\n".format(str(ret)))
                 if game.tasks:
                     await asyncio.wait(game.tasks)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('players', iter_name_lists())
+@pytest.mark.parametrize('run', range(5))
+async def test_night(players, run):
+    """Test night."""
+    with open(MOCK_IRC_FILE, 'a') as fd:
+        fd.write("\n===== TEST night =====\n")
+
+    with mock.patch('lycanthrope.notify_player', new=mock_notify_player):
+        with mock.patch('lycanthrope.get_choice', new=mock_get_choice):
+
+            # init game
+            game = lycanthrope.Game()
+            for player in players:
+                game.add_player(player)
+            game.deal_roles()
+            with open(MOCK_IRC_FILE, 'a') as fd:
+                fd.write("Initial distribution: {}\n".format(
+                    str(game.initial_roles)
+                ))
+
+            await game.night()
+            with open(MOCK_IRC_FILE, 'a') as fd:
+                fd.write("Finale distribution: {}\n".format(
+                    str(game.current_roles)
+                ))
+
+            # clean up
+            if game.tasks:
+                await asyncio.wait(game.tasks)

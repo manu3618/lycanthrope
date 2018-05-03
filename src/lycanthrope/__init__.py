@@ -130,7 +130,7 @@ class Game:
 
         choices = [adv for adv in self.players[3:] if adv != player]
         msg = "Choisis qui tu vas imiter cette nuit."
-        self._fire_and_forget(notify_player(player, msg))
+        await notify_player(player, msg)
         choice = await get_choice(player, choices)
         new_role = self.doppelganger_choice = self.initial_roles[choice]
         msg = "Tu es maintenant {}".format(new_role)
@@ -381,6 +381,33 @@ class Game:
         finished, _ = await asyncio.wait(tasks)
         for p, v in zip(player, finished):
             self.vote[p] = v.result()
+
+    async def night(self):
+        """Perform nigth steps.
+
+        /!\ Assume roles are dealt.
+        """
+        if self.tasks:
+            await asyncio.wait(self.tasks)
+            self.tasks = []
+        await self.doppelganger_turn()
+        first_turns = ('loup_garou_turn', 'sbire_turn', 'franc_macon_turn',
+                       'voyante_turn', 'voleur_turn', 'noiseuse_turn',
+                       'soulard_turn')
+        for turn in first_turns:
+            self._fire_and_forget(getattr(self, turn)())
+
+        finished, _ = await asyncio.wait(self.tasks)
+        switches = [turn.result() for turn in finished if turn.result()]
+
+        for sw in switches:
+            (self.current_roles[sw[0]],
+             self.current_roles[sw[1]]) = (self.current_roles[sw[1]],
+                                           self.current_roles[sw[0]])
+        self._fire_and_forget(self.insomniaque_turn())
+        if self.doppelganger_choice == 'insomniaque':
+            self._fire_and_forget(self.insomniaque_turn(True))
+        await asyncio.wait(self.tasks)
 
     async def _collect_vote(self, player):
         """Perform vote.
