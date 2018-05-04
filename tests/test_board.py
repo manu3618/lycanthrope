@@ -172,3 +172,33 @@ async def test_night(players, run):
             # clean up
             if game.tasks:
                 await asyncio.wait(game.tasks)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('players', iter_name_lists())
+@pytest.mark.parametrize('run', range(5))
+async def test_votes(players, run):
+    """Test votes."""
+    with open(MOCK_IRC_FILE, 'a') as fd:
+        fd.write("\n===== TEST votes =====\n")
+
+    with mock.patch('lycanthrope.game.notify_player', new=mock_notify_player):
+        with mock.patch('lycanthrope.game.get_choice', new=mock_get_choice):
+
+            # init game
+            game = lycanthrope.Game()
+            for player in players:
+                game.add_player(player)
+            game.deal_roles()
+
+            await game.collect_votes(timeout=run/10)
+
+            with open(MOCK_IRC_FILE, 'a') as fd:
+                fd.write("votes: {}\n".format(
+                    str(game.votes)
+                ))
+                fd.write("dead: {}\n".format(game.dead))
+
+            # clean up
+            if game.tasks:
+                await asyncio.wait(game.tasks)

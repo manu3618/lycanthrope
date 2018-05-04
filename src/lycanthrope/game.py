@@ -1,5 +1,6 @@
 import asyncio
 from random import shuffle
+from collections import Counter
 
 from .irc import notify_player, get_choice
 
@@ -386,6 +387,89 @@ class Game:
         if self.doppelganger_choice == 'insomniaque':
             self._fire_and_forget(self.insomniaque_turn(True))
         await asyncio.wait(self.tasks)
+
+    async def collect_votes(self, timeout=10):
+        """Perform votes and update dead.
+
+        Args:
+            timeout (int): maximal time to vote.
+        """
+        if self.tasks:
+            await asyncio.wait(self.tasks)
+            self.tasks = []
+        for player in self.players[3:]:
+            self._fire_and_forget(self._vote(player))
+        delay = timeout / 5
+        for run in range(1, 5):
+            if not self.tasks:
+                break
+            done, pending = await asyncio.wait(self.tasks, timeout=delay)
+            if pending:
+                msg = "Il manque {} votes et il reste {} secondes.".format(
+                    len(pending),
+                    str(timeout - delay * run)
+                )
+                await notify_player(None, msg)
+            self.tasks = list(pending)
+
+        if self.tasks:
+            done, pending = await asyncio.wait(self.tasks, timeout=delay)
+
+        if pending:
+            msg = (r"/!\ Certains n'ont pas eu le temps de voter. "
+                   "Tant pis pour eux.")
+            for tsk in pending:
+                tsk.cancel()
+        self.tasks = []
+
+        results = Counter(self.votes.values()).most_common()
+        if not results:
+            msg = "Il n'y a pas de mort aujourd'hui."
+            await notify_player(None, msg)
+        elif len(results) > 1 and results[0][1] == results[1][1]:
+
+            # Tie. 2nd vote:
+            choice = [player for player, votes in results
+                      if votes == results[0][1]]
+            msg = ("Il y a égalité entre {}. \nEn cas de nouvelle égalité, "
+                   "il n'y aura pas de mort."
+                   "\nVous avez {} secondes.").format(' et '.join(choice),
+                                                      str(delay))
+
+            await notify_player(None, msg)
+            self.votes = {}
+            for player in self.players[3:]:
+                self._fire_and_forget(self._vote(player, choice))
+            done, pending = await asyncio.wait(self.tasks, timeout=delay)
+            for tsk in pending:
+                tsk.cancel()
+            self.tasks = []
+            results = Counter(self.votes.values()).most_common()
+
+            if not results or (len(results) > 2
+                               and results[0][0] == results[1][1]):
+                msg = "Il n'y a pas de mort cette nuit."
+                await notify_player(None, msg)
+            return
+        else:
+            self.dead = [results[0][0]]
+            msg = "Le village a décidé de tuer {}.".format(results[0][0])
+
+    async def _vote(self, player, choice=None):
+        """Collect vote for one player.
+
+        Args:
+            player (string): player voting
+            choice (list or tuple): possible choices. If None, all
+        other players.
+        """
+        if choice is None:
+            choice = [adv for adv in self.players
+                      if adv not in ('0', '1', '2', player)]
+        msg = ("Quelle personne veux-tu éliminer?")
+        await notify_player(player, msg)
+        result = await get_choice(player, choice)
+        self.votes[player] = result
 
     async def _collect_vote(self, player):
         """Perform vote.
