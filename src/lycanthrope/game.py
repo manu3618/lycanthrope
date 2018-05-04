@@ -1,9 +1,8 @@
 import asyncio
-from random import shuffle
 from collections import Counter
+from random import shuffle
 
-from .irc import notify_player, get_choice
-
+from .irc import get_choice, notify_player
 
 # max number of player with the role
 MAX_ROLE_NB = {'tanneur': 1,
