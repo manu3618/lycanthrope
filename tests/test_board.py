@@ -202,3 +202,25 @@ async def test_votes(players, run):
             # clean up
             if game.tasks:
                 await asyncio.wait(game.tasks)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('players', iter_name_lists())
+@pytest.mark.parametrize('run', range(5))
+async def test_game(players, run):
+    """Test whole game."""
+    with open(MOCK_IRC_FILE, 'a') as fd:
+        fd.write("\n===== TEST game =====\n")
+
+    with mock.patch('lycanthrope.game.notify_player', new=mock_notify_player):
+        with mock.patch('lycanthrope.game.get_choice', new=mock_get_choice):
+
+            # init game
+            game = lycanthrope.Game()
+            for player in players:
+                game.add_player(player)
+            game.deal_roles()
+
+            # perform several games
+            for _ in range(run):
+                await game.game(timeout=1)

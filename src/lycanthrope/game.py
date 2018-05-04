@@ -45,6 +45,7 @@ class Game:
         self.votes = {}
         self.dead = []
         self.tasks = []                 # tasks launched
+        self.victories = Counter()
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
@@ -311,7 +312,7 @@ class Game:
         msg = "Ton rôle est à présent {}.".format(self.current_roles[player])
         await notify_player(player, msg)
 
-    def victory(self):
+    async def victory(self):
         """Compute victory.
 
         Return:
@@ -322,34 +323,54 @@ class Game:
             ['chasseur', 'doppelgänger', 'franc macon', 'voyante', 'voleur',
              'noiseuse', 'soulars', 'insomniaque', 'villageois']
         )
+        if villageois is None:
+            villageois = []
+        elif isinstance(villageois, str):
+            villageois = [villageois]
+        if isinstance(meute, str):
+            meute = [meute]
+
         if not self.dead:
             if self._get_player_nick(['loup garou']):
                 return ('la meute', meute)
             else:
                 return ('le village', villageois)
-        elif ((self.current_role[self.dead[0]] == 'doppelgänger'
-               and self.doppelganger_choice == 'chasseur')
-              or self.current_role[self.dead[0]] == 'chasseur'):
-            self.dead.append(self.vote[self.dead[0]])
-        elif self._get_player_nick(['tanneur']) in self.dead:
-            if any(player in self.dead
-                   for player in self._get_player_nick(['loup garou'])):
+
+        if ((self.current_roles[self.dead[0]] == 'doppelgänger'
+             and self.doppelganger_choice == 'chasseur')
+                or self.current_roles[self.dead[0]] == 'chasseur'):
+            if not self.votes.get(self.dead[0]):
+                msg = ("Chasseur, tu es mort et tu n'as voté contre"
+                       "personne pendant la nuit. "
+                       "Qui veux-tu emporter avec toi?")
+                await notify_player(self.dead[0], msg)
+                await self._vote(self.dead[0])
+            self.dead.append(self.votes[self.dead[0]])
+
+        if self._get_player_nick(['tanneur']) in self.dead:
+            if (self._get_player_nick('loup garou')
+                and any(player in self.dead
+                        for player in self._get_player_nick(['loup garou']))):
                 return ('le tanneur', self._get_player_nick(['tanneur']))
             else:
                 return ('le tanneur et le village',
                         villageois + [self._get_player_nick('tanneur')])
-        elif any(player in self.dead
-                 for player in self._get_player_nick(['loup garou'])):
-                return ('le village', villageois)
-        elif 'sbire' in self.dead:
+
+        if (self._get_player_nick(['loup garou'])
+            and any(player in self.dead
+                    for player in self._get_player_nick(['loup garou']))):
+            return ('le village', villageois)
+
+        if 'sbire' in self.dead:
             if self._get_player_nick('loup garou'):
                 return ('la meute', meute)
             else:
                 return ('le village', villageois)
-        elif self._get_player_nick('loup garou', 'sbire'):
+
+        if self._get_player_nick('loup garou', 'sbire'):
             return ('la meute', meute)
         else:
-            return ('personne', )
+            return ('personne', None)
 
     async def vote(self):
         """Perform vote."""
@@ -387,6 +408,70 @@ class Game:
         if self.doppelganger_choice == 'insomniaque':
             self._fire_and_forget(self.insomniaque_turn(True))
         await asyncio.wait(self.tasks)
+
+    async def game(self, timeout=300):
+        """Begin the game. Assume all players are registered.
+
+        Args:
+            timeout (int): maximal time (in seconds) before closing the votes.
+        """
+        if len(self.players) < 6 or len(self.players) > 13:
+            msg = ("Le nombre de joueurs n'est pas  bon. "
+                   "Il doit y avoir entre 3 et 10 joueurs, "
+                   "et non {}.").format(str(len(self.players) - 3))
+            await notify_player(None, msg)
+            return
+        # before night
+        self.deal_roles()
+        await self.notify_player_roles()
+
+        msg = ("La nuit tombe sur le village. "
+               "Cependant, certains joueurs accomplissant une action "
+               "de manière furtive.")
+        await notify_player(None, msg)
+
+        await self.night()
+
+        # post-night action
+        msg = ("Le jour se lève sur le village. Le vote est ouvert. "
+               "Vous devez voter dans les {} prochaines secondes "
+               "pour la personne que vous voulez tuer.").format(str(timeout))
+        await notify_player(None, msg)
+        await self.collect_votes(timeout)
+        victory = await self.victory()
+
+        if self.dead:
+            msg = "Le village a tué {} personne{}: {}".format(
+                len(self.dead),
+                's' if len(self.dead) > 1 else '',
+                ', '.join(self.dead)
+            )
+        else:
+            msg = "Le village n'a tué personne."
+        await notify_player(None, msg)
+
+        # repr of winners
+        if victory[1] and isinstance(victory[1], (list, tuple)):
+            winners = ', '.join(victory[1])
+        elif victory[1]:
+            winners = victory[1]
+        else:
+            winners = ''
+
+        msg = ("C'est {} qui gagne{}, c'est à dire les joueurs suivant: "
+               "{}.").format(victory[0] if victory[0] else 'personne',
+                             'ent' if 'et' in victory[0] else '',
+                             winners)
+        await notify_player(None, msg)
+        if winners:
+            for player in victory[1]:
+                self.victories[player] += 1
+        msg = "Voici le nombre de victoires: {}".format(
+            str(dict(self.victories))
+        )
+        await notify_player(None, msg)
+        if self.tasks:
+            await asyncio.wait(self.tasks)
 
     async def collect_votes(self, timeout=10):
         """Perform votes and update dead.
