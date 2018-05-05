@@ -260,7 +260,7 @@ async def test_victory(distribution):
             game.initial_roles = distribution.copy()
             game.current_roles = distribution.copy()
 
-            for dead, doppel in product(game.players[:3] + [None], repeat=2):
+            for dead, doppel in product(game.players[3:] + [None], repeat=2):
                 if dead:
                     game.dead = [dead]
                 else:
