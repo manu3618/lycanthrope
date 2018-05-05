@@ -255,8 +255,8 @@ async def test_victory(distribution):
                     game.dead = [dead]
                 else:
                     game.dead = []
-                if doppel != 'doppelgänger':
-                    game.doppelganger_choice = doppel
+                if doppel and doppel != 'doppelgänger':
+                    game.doppelganger_choice = distribution[doppel]
 
                 with open(MOCK_IRC_FILE, 'a') as fd:
                     fd.write("distribution:{}\n".format(
