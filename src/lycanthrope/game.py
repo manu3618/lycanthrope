@@ -315,7 +315,7 @@ class Game:
         """Compute victory.
 
         Return:
-            tuple: (winning side(string), winning players (list of nick))G
+            tuple: (winning side(string), winning players (list of nick))
         """
         meute = self._get_player_nick(['loup garou', 'sbire'])
         villageois = self._get_player_nick(

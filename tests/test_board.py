@@ -1,6 +1,7 @@
 import asyncio
 import tempfile
 from collections import Counter
+from itertools import product, combinations
 from random import choice, randint
 
 import faker
@@ -55,6 +56,15 @@ async def mock_notify_player(player, msg):
     await asyncio.sleep(randint(0, 10)/100)
     with open(MOCK_IRC_FILE, 'a') as fd:
         fd.write(" --> [{}]\t{}\n".format(player, msg))
+
+
+def test_add_duplicate_player():
+    """Test addition of dupplicate players raise exception."""
+    players = ['a', 'a']
+    game = lycanthrope.Game()
+    with pytest.raises(ValueError):
+        for player in players:
+            game.add_player(player)
 
 
 @pytest.mark.parametrize('players', iter_name_lists())
@@ -202,6 +212,61 @@ async def test_votes(players, run):
             # clean up
             if game.tasks:
                 await asyncio.wait(game.tasks)
+
+
+def distributions():
+    """Yield interesting roles distributions."""
+    center = {str(i): 'villageois' for i in range(3)}
+    base = {name: name for name, num in MAX_ROLE_NB.items()
+            if num == 1}
+    base.update({'lg' + str(i): 'loup garou' for i in range(2)})
+    base.update({'fm' + str(i): 'franc maçon' for i in range(2)})
+
+    for l in 3, 5, 10:
+        for distr in combinations(base, l):
+            ret = center.copy()
+            ret.update({name: base[name] for name in distr})
+            yield ret
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('distribution', distributions())
+async def test_victory(distribution):
+    """Test voctory computing."""
+    with open(MOCK_IRC_FILE, 'a') as fd:
+        fd.write("\n===== TEST victory =====\n")
+
+    with mock.patch('lycanthrope.game.notify_player', new=mock_notify_player):
+        with mock.patch('lycanthrope.game.get_choice', new=mock_get_choice):
+
+            # init game
+            game = lycanthrope.Game()
+            real_players = [player for player in distribution
+                            if player not in ('0', '1', '2')]
+
+            for player in real_players:
+                game.add_player(player)
+            game.ante_initial_roles = distribution.copy()
+            game.initial_roles = distribution.copy()
+            game.current_roles = distribution.copy()
+
+            for dead, doppel in product(game.players[:3] + [None], repeat=2):
+                if dead:
+                    game.dead = [dead]
+                else:
+                    game.dead = []
+                if doppel != 'doppelgänger':
+                    game.doppelganger_choice = doppel
+
+                with open(MOCK_IRC_FILE, 'a') as fd:
+                    fd.write("distribution:{}\n".format(
+                        str(game.current_roles)
+                    ))
+                    fd.write("dead:{}\n".format(game.dead))
+                    fd.write("doppelganger choice:{}\n".format(
+                        game.doppelganger_choice
+                    ))
+                    fd.write("victory:{}\n".format(str(await game.victory())))
 
 
 @pytest.mark.asyncio
