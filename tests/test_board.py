@@ -67,6 +67,16 @@ def test_add_duplicate_player():
             game.add_player(player)
 
 
+def test_more_player():
+    """Test there cannot be more than 16 players."""
+    players = [str(i) for i in range(4, 26)]
+    game = lycanthrope.Game()
+    with pytest.raises(RuntimeWarning):
+        for player in players:
+            game.add_player(player)
+            assert len(game.players) < 17
+
+
 @pytest.mark.parametrize('players', iter_name_lists())
 def test_deal_role(players):
     """Deal roles among players and perform checks.
