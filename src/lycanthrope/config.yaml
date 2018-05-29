@@ -1,0 +1,5 @@
+# IRC parameters
+nickname: lycanthrope_bot   # default nickname
+chan: '#test_lycanthrope'   # chan to play
+server: chat.freenode.net   # IRC server hostname
+port: 6697                  # IRC port
