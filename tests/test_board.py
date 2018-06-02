@@ -30,7 +30,7 @@ def iter_name_lists(min_len=3, max_len=10):
         yield {names_gen.first_name() for _ in range(length)}
 
 
-async def mock_get_choice(player, choices):
+async def mock_get_choice(player, choices, bot):
     """Simulate the get_choice()
 
     Args:
@@ -46,7 +46,7 @@ async def mock_get_choice(player, choices):
     return cho
 
 
-async def mock_notify_player(player, msg):
+async def mock_notify_player(player, msg, bot):
     """Simulate notify_player.
 
     Args:
