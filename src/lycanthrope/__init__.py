@@ -1,4 +1,5 @@
 """IRC bot that play 'loup garou e une nuit'."""
+from  lycanthrope.game import Game
 
 # TODO move DESCR in conf file.
 DESCR = {'tanneur': "Le but du taneur est de mourir.",
