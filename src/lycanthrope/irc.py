@@ -337,6 +337,28 @@ async def start(bot, user, *args):
     await notify_player(None, "Le jeu démarre.", bot)
 
 
+@LycanthropeBot.register_cmd
+async def stop(bot, user, *args):
+    '''
+    stop participation.
+    '''
+    bot.game.remove_player(user)
+    await bot.send_to_chan("Les joueurs sont: "
+                           + ', '.format(bot.game.players))
+
+
+@LycanthropeBot.register_cmd
+async def remove(bot, user, nick, *args):
+    '''
+    usage: !remove <player>
+
+    remove the player from the game.
+    '''
+    bot.game.remove_player(user)
+    await bot.send_to_chan("Les joueurs sont: "
+                           + ', '.format(bot.game.players))
+
+
 def _safe_parse(msg):
     """Parse an irc message.
 
