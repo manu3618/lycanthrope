@@ -195,7 +195,7 @@ class Game:
         if not frama:
             return
         elif isinstance(frama, list):
-            msg = "Il y a 2 franc-maçons ({}).".format(str(frama))
+            msg = "Il y a 2 franc-maçons ({}).".format(' et '.join(frama))
             for player in frama:
                 self._fire_and_forget(notify_player(player, msg, self.bot))
         else:
@@ -432,7 +432,7 @@ class Game:
         await self.notify_player_roles()
 
         msg = ("La nuit tombe sur le village. "
-               "Cependant, certains joueurs accomplissant une action "
+               "Cependant, certains joueurs accomplissent une action "
                "de manière furtive.")
         await notify_player(None, msg, self.bot)
 
