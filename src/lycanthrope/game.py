@@ -66,6 +66,19 @@ class Game:
         else:
             raise ValueError("Player's nickname already used.")
 
+    def remove_player(self, nick):
+        """Remove a  player from the game.
+
+        Only works when the game has not started.
+
+        Args:
+            nick (string): nick of the player
+        """
+        if self.in_progress:
+            raise RuntimeError("Game in progress")
+        else:
+            self.players.remove(nick)
+
     def deal_roles(self):
         """Maps each player to a role."""
         nb_player = len(self.players)
