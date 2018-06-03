@@ -46,6 +46,7 @@ class Game:
         self.tasks = []                 # tasks launched
         self.victories = Counter()
         self.bot = None
+        self.in_progress = False
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
@@ -427,7 +428,13 @@ class Game:
                    "et non {}.").format(str(len(self.players) - 3))
             await notify_player(None, msg, self.bot)
             return
+
+        if self.in_progress:
+            # the game has alrealdy begun.
+            return
+
         # before night
+        self.in_progress = True
         self.deal_roles()
         await self.notify_player_roles()
 
@@ -445,6 +452,7 @@ class Game:
         await notify_player(None, msg, self.bot)
         await self.collect_votes(timeout)
         victory = await self.victory()
+        self.in_progress = False
 
         if self.dead:
             msg = "Le village a tué {} personne{}: {}".format(
