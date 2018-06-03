@@ -78,6 +78,33 @@ def test_more_player():
 
 
 @pytest.mark.parametrize('players', iter_name_lists())
+def test_remove_player(players):
+    """Test player removal."""
+    game = lycanthrope.Game()
+    for player in players:
+        game.add_player(player)
+    nick = choice(game.players)
+    assert nick in game.players
+    for _ in range(2):
+        game.remove_player(nick)
+        assert nick not in game.players
+
+
+@pytest.mark.parametrize('players', iter_name_lists())
+def test_remove_player_failure(players):
+    """Test player removal after game start."""
+    game = lycanthrope.Game()
+    for player in players:
+        game.add_player(player)
+    nick = choice(game.players)
+    assert nick in game.players
+    game.in_progress = True
+    with pytest.raises(RuntimeError):
+        game.remove_player(nick)
+    assert nick in game.players
+
+
+@pytest.mark.parametrize('players', iter_name_lists())
 def test_deal_role(players):
     """Deal roles among players and perform checks.
 

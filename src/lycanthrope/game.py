@@ -76,7 +76,7 @@ class Game:
         """
         if self.in_progress:
             raise RuntimeError("Game in progress")
-        else:
+        elif nick in self.players:
             self.players.remove(nick)
 
     def deal_roles(self):
