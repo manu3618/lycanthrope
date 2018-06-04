@@ -48,20 +48,18 @@ async def get_choice(player, choices, bot=None):
         player (string): nick of the player.
         choices (list or tuple): available choices.
     """
-    # TODO:
-    # * tell possible choices
-    # * check return
     msg = "Tu dois choisir parmi les choix suivant: {}".format(
         ', '.join(choices)
     )
     await notify_player(player, msg, bot)
-    # TODO await choice
     choice = await read_chan(player, bot)
     while choice not in choices:
         msg = ("Je n'ai pas compris. Tu dois choisir un et un seul des mots "
                "suvants: {}").format(', '.join(choices))
         await notify_player(player, msg, bot)
         choice = await read_chan(player, bot)
+    msg = "Ton choix est " + choice
+    await notify_player(player, msg, bot)
     return choice
 
 
@@ -97,7 +95,7 @@ class LycanthropeBot():
 
     _callbacks = {}
 
-    def __init__(self, game, roles=None, config='./config.yaml',
+    def __init__(self, game, roles=None, loop=None, config='./config.yaml',
                  loglevel=logging.DEBUG, logfile='/tmp/lycanthrope.log'):
         """Init
 
@@ -121,6 +119,7 @@ class LycanthropeBot():
         # IRCconnection
         with open(config) as conf:
             self.connect_param = yaml.load(conf.read())
+        self.loop = loop or asyncio.get_event_loop()
 
     def _connect(self):
         '''Connect to the IRC server.'''
@@ -150,8 +149,7 @@ class LycanthropeBot():
         if not self.game:
             raise RuntimeError("no game instanciated")
         self._connect()
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self._rcv_forever())
+        self.loop.run_until_complete(self._rcv_forever())
 
     def info(self, msg):
         '''Log a message.
@@ -167,13 +165,13 @@ class LycanthropeBot():
         Yield:
             dict: user, message
         """
-        loop = asyncio.get_event_loop()
         tsk = []
         while True:
             buf = ""
             pending = tsk = [
-                asyncio.ensure_future(loop.sock_recv(self._sock, 1024))
+                asyncio.ensure_future(self.loop.sock_recv(self._sock, 1024))
             ]
+
             while pending:
                 done, pending = await asyncio.wait(tsk, timeout=1)
                 await asyncio.sleep(0)
@@ -194,7 +192,6 @@ class LycanthropeBot():
                     asyncio.ensure_future(
                         self.react(parsed['user'], parsed['msg'])
                     )
-
                     self.logger.debug("privmsgs buff:" + pformat(PRIVMSGS))
             await asyncio.sleep(0)
 
@@ -218,7 +215,7 @@ class LycanthropeBot():
         Args:
             msg (str): message to send
         """
-        line = "NOTICE {} :{}\r\n".format(self.connect_param['chan'], msg)
+        line = "PRIVMSG {} :{}\r\n".format(self.connect_param['chan'], msg)
         self.logger.debug("sending " + line)
         self._sock.send(line.encode())
 
@@ -275,14 +272,14 @@ async def help(bot, user, cmd=None, *args):
     usage: !help [cmd]
     '''
     if not cmd:
-        return "try !help <cmd>\n" + ls(bot)
+        return "try !help <cmd>\n" + await ls(bot)
     cmd = bot._callbacks.get(cmd, None)
-    if cmd in None:
+    if cmd is None:
         return
     doc = cmd.__doc__
     if not doc:
         return
-    return '\n'.join(line.strip() for line in doc.strip.split('\n'))
+    return '\n'.join(line.strip() for line in doc.split('\n'))
 
 
 @LycanthropeBot.register_cmd
@@ -290,8 +287,11 @@ async def play(bot, user, *args):
     '''
     Add the player to the game.
     '''
-    bot.game.add_player(user)
-    await bot.send_to_chan("{} fait maintenant parti des joueurs".format(user))
+    with suppress(ValueError):
+        bot.game.add_player(user)
+        await bot.send_to_chan(
+            "{} fait maintenant parti des joueurs".format(user)
+        )
 
 
 @LycanthropeBot.register_cmd
@@ -331,10 +331,7 @@ async def start(bot, user, *args):
     '''
     start the game.
     '''
-    await notify_player(None, "Le jeu démarre dans quelques secondes.", bot)
-    await asyncio.sleep(10)
-    asyncio.ensure_future(bot.game.game())
-    await notify_player(None, "Le jeu démarre.", bot)
+    await bot.game.game()
 
 
 @LycanthropeBot.register_cmd
@@ -344,7 +341,7 @@ async def stop(bot, user, *args):
     '''
     bot.game.remove_player(user)
     await bot.send_to_chan("Les joueurs sont: "
-                           + ', '.format(bot.game.players))
+                           + ', '.join(bot.game.players[3:]))
 
 
 @LycanthropeBot.register_cmd
@@ -354,9 +351,9 @@ async def remove(bot, user, nick, *args):
 
     remove the player from the game.
     '''
-    bot.game.remove_player(user)
+    bot.game.remove_player(nick)
     await bot.send_to_chan("Les joueurs sont: "
-                           + ', '.format(bot.game.players))
+                           + ', '.join(bot.game.players[3:]))
 
 
 def _safe_parse(msg):
