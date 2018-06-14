@@ -497,6 +497,10 @@ class Game:
             str(dict(self.victories))
         )
         await notify_player(None, msg, self.bot)
+        await self.clean_up()
+
+    async def clean_up(self):
+        """run all remaining tasks."""
         if self.tasks:
             await asyncio.wait(self.tasks)
 
