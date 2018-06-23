@@ -66,6 +66,7 @@ async def get_choice(player, choices, bot=None):
 async def read_chan(player, bot):
     """Return the last message sent by a player."""
     if bot:
+        bot.logger.debug("read_chan({})".format(player))
         bot.logger.debug("privmsgs buff:" + pformat(PRIVMSGS))
         with await PRIVMSG_COND[player]:
             await PRIVMSG_COND[player].wait()
@@ -112,6 +113,8 @@ class LycanthropeBot():
         else:
             self.role = {}
 
+        self.send_queue = []
+
         # logging
         logging.basicConfig(filename=logfile, level=loglevel)
         self.logger = logging.getLogger()
@@ -125,6 +128,7 @@ class LycanthropeBot():
         '''Connect to the IRC server.'''
         plain_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock = ssl.wrap_socket(plain_sock)
+        self._sock.settimeout(10)
         self.info('connecting with parameters '
                   + pformat(self.connect_param))
         self._sock.connect((self.connect_param['server'],
@@ -159,31 +163,45 @@ class LycanthropeBot():
         '''
         self.logger.info(msg)
 
+    async def _send(self):
+        """Send all messages in queue."""
+        self.logger.debug("sending queue: " + str(self.send_queue))
+        if self.send_queue:
+            msg = b''.join(self.send_queue)
+            self.logger.debug("sending queued message " + msg.decode())
+            self._sock.send(msg)
+            self.send_queue = []
+            await asyncio.sleep(1)
+        self.logger.debug("sending queue empty")
+
     async def _rcv_forever(self):
         """Receive messages forever (mail loop).
 
         Yield:
             dict: user, message
         """
-        tsk = []
         while True:
+            await self._send()
             buf = ""
-            pending = tsk = [
-                asyncio.ensure_future(self.loop.sock_recv(self._sock, 1024))
-            ]
+            line = b''
+            try:
+                self.logger.debug("waiting...")
+                line = self._sock.recv(1024)
+            except socket.timeout:
+                self.logger.debug("stop waiting")
 
-            while pending:
-                done, pending = await asyncio.wait(tsk, timeout=1)
-                await asyncio.sleep(0)
+            if not line:
+                continue
 
-            line = done.pop().result()
             buf += line.decode()
             for msg in buf.split('\n'):
                 if not msg:
                     continue
                 self.logger.debug("recv {}".format(msg))
+
                 if msg.startswith('PING'):
                     self._sock.send('PONG {}'.format(msg).encode())
+
                 parsed = _safe_parse(msg)
                 if parsed:
                     self.logger.debug('parsed msg: {}'.format(str(parsed)))
@@ -193,13 +211,16 @@ class LycanthropeBot():
                         self.react(parsed['user'], parsed['msg'])
                     )
                     self.logger.debug("privmsgs buff:" + pformat(PRIVMSGS))
-            await asyncio.sleep(0)
+
+            # take time to fill sending queue
+            await asyncio.sleep(1)
 
     async def react(self, user, message):
         """Process a message
 
         When !command [<args>] is found, find the appropriate callback
         """
+        self.logger.debug("react({}, {})".format(user, message))
         if not message.startswith('!'):
             return
 
@@ -215,9 +236,10 @@ class LycanthropeBot():
         Args:
             msg (str): message to send
         """
+        self.logger.debug("send_to_chan({})".format(msg))
         line = "PRIVMSG {} :{}\r\n".format(self.connect_param['chan'], msg)
-        self.logger.debug("sending " + line)
-        self._sock.send(line.encode())
+        self.logger.debug("queueing " + line)
+        self.send_queue.append(line.encode())
 
     async def send_priv_msg(self, user, msg):
         """Send a private message to a user.
@@ -226,12 +248,13 @@ class LycanthropeBot():
             user (str): the user
             msg (str): the message
         """
+        self.logger.debug("send_priv_msg({}, {})".format(user, msg))
         if not msg:
             return
         for chunk in msg.split('\n'):
             line = "PRIVMSG {} :{}\r\n".format(user, chunk)
-            self.logger.debug("sending " + line)
-            self._sock.send(line.encode())
+            self.logger.debug("queueing " + line)
+            self.send_queue.append(line.encode())
 
     @classmethod
     def register_cmd(cls, callback):
