@@ -191,6 +191,7 @@ class LycanthropeBot():
                 self.logger.debug("stop waiting")
 
             if not line:
+                asyncio.sleep(1)
                 continue
 
             buf += line.decode()
@@ -211,9 +212,11 @@ class LycanthropeBot():
                         self.react(parsed['user'], parsed['msg'])
                     )
                     self.logger.debug("privmsgs buff:" + pformat(PRIVMSGS))
+                else:
+                    self.logger.debug("RECV: " + msg)
 
             # take time to fill sending queue
-            await asyncio.sleep(1)
+            await asyncio.sleep(0)
 
     async def react(self, user, message):
         """Process a message
@@ -306,7 +309,7 @@ async def help(bot, user, cmd=None, *args):
 
 
 @LycanthropeBot.register_cmd
-async def play(bot, user, *args):
+async def addme(bot, user, *args):
     '''
     Add the player to the game.
     '''
@@ -377,6 +380,22 @@ async def remove(bot, user, nick, *args):
     bot.game.remove_player(nick)
     await bot.send_to_chan("Les joueurs sont: "
                            + ', '.join(bot.game.players[3:]))
+
+@LycanthropeBot.register_cmd
+async def play(bot, *args):
+    '''
+    usage: !play
+
+    begin the game with all chan participants.
+    '''
+    bot._sock.send(b"NAMES #test_lycanthrope\r\n")
+    name_list = bot._sock.recv(4096).decode().split(':')
+    name_list = (name for name in name_list[-1].split(' ')
+                 if not name == bot.connect_param['nickname'])
+    bot.game.players = [str(num) for num in range(3)]
+    for user in name_list:
+        bot.game.add_player(user)
+    await bot.game.game()
 
 
 def _safe_parse(msg):
