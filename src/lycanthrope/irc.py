@@ -381,6 +381,7 @@ async def remove(bot, user, nick, *args):
     await bot.send_to_chan("Les joueurs sont: "
                            + ', '.join(bot.game.players[3:]))
 
+
 @LycanthropeBot.register_cmd
 async def play(bot, *args):
     '''
