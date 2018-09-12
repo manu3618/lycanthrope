@@ -18,6 +18,8 @@ MAX_ROLE_NB = {'tanneur': 1,
                'insomniaque': 1,
                'villageois': 3}
 
+MANDATORY_ROLES = {'voyante', 'loup garou'}
+
 
 class Game:
     """Game
@@ -89,12 +91,12 @@ class Game:
                  for _ in range(nb)]
         shuffle(roles)
 
-        # at least one 'voyante' and one 'loup garou' must be dealt
+        # deal manadatory roles if needed
         selected_roles = roles[:nb_role]
-        if 'voyante' not in selected_roles:
-            selected_roles[0] = 'voyante'
-        if 'loup garou' not in selected_roles:
-            selected_roles[1] = 'loup garou'
+
+        for i, role in MANDATORY_ROLES:
+            if role not in selected_roles:
+                selected_roles[i] = role
         shuffle(selected_roles)
 
         self.ante_initial_roles = dict(zip(self.players, selected_roles))
