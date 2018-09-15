@@ -5,20 +5,22 @@ from random import shuffle
 from .irc import get_choice, notify_player
 
 # max number of player with the role
-MAX_ROLE_NB = {'tanneur': 1,
-               'chasseur': 1,
-               'doppelgänger': 1,
-               'loup garou': 2,
-               'sbire': 1,
-               'franc maçon': 2,
-               'voyante': 1,
-               'voleur': 1,
-               'noiseuse': 1,
-               'soulard': 1,
-               'insomniaque': 1,
-               'villageois': 3}
+MAX_ROLE_NB = {
+    "tanneur": 1,
+    "chasseur": 1,
+    "doppelgänger": 1,
+    "loup garou": 2,
+    "sbire": 1,
+    "franc maçon": 2,
+    "voyante": 1,
+    "voleur": 1,
+    "noiseuse": 1,
+    "soulard": 1,
+    "insomniaque": 1,
+    "villageois": 3,
+}
 
-MANDATORY_ROLES = {'voyante', 'loup garou'}
+MANDATORY_ROLES = {"voyante", "loup garou"}
 
 
 class Game:
@@ -38,14 +40,14 @@ class Game:
 
     def __init__(self):
         self.roles = []
-        self.ante_initial_roles = {}    # before doppelganger
-        self.initial_roles = {}         # after doppelganger
+        self.ante_initial_roles = {}  # before doppelganger
+        self.initial_roles = {}  # after doppelganger
         self.current_roles = {}
-        self.doppelganger_choice = ''
-        self.doppelganger = ''
+        self.doppelganger_choice = ""
+        self.doppelganger = ""
         self.votes = {}
         self.dead = []
-        self.tasks = []                 # tasks launched
+        self.tasks = []  # tasks launched
         self.victories = Counter()
         self.bot = None
         self.in_progress = False
@@ -87,14 +89,13 @@ class Game:
         nb_role = nb_player + 3
 
         # select roles
-        roles = [role for role, nb in MAX_ROLE_NB.items()
-                 for _ in range(nb)]
+        roles = [role for role, nb in MAX_ROLE_NB.items() for _ in range(nb)]
         shuffle(roles)
 
         # deal manadatory roles if needed
         selected_roles = roles[:nb_role]
 
-        for i, role in MANDATORY_ROLES:
+        for i, role in enumerate(MANDATORY_ROLES):
             if role not in selected_roles:
                 selected_roles[i] = role
         shuffle(selected_roles)
@@ -115,14 +116,14 @@ class Game:
         else:
             roles = self.current_roles
         for player in self.players[3:]:
-            msg = 'Tu es {}'.format(roles[player])
+            msg = "Tu es {}".format(roles[player])
             self._fire_and_forget(notify_player(player, msg, self.bot))
 
     async def doppelganger_turn(self):
         """Execute the doppelgänger's turn."""
-        player = self._get_player_nick('doppelgänger')
+        player = self._get_player_nick("doppelgänger")
         if not player:
-            return ('0', '0')
+            return ("0", "0")
 
         choices = [adv for adv in self.players[3:] if adv != player]
         msg = "Choisis qui tu vas imiter cette nuit."
@@ -131,20 +132,20 @@ class Game:
         new_role = self.doppelganger_choice = self.initial_roles[choice]
         msg = "Tu es maintenant {}".format(new_role)
         self._fire_and_forget(notify_player(player, msg, self.bot))
-        if new_role == 'sbire':
+        if new_role == "sbire":
             asyncio.ensure_future(self.sbire_turn(player))
-            return ('0', '0')
-        elif new_role in ('loup garou', 'franc macon'):
+            return ("0", "0")
+        elif new_role in ("loup garou", "franc macon"):
             self.initial_roles[player] = self.initial_roles[choice]
-            return ('0', '0')
-        elif new_role == 'voyante':
+            return ("0", "0")
+        elif new_role == "voyante":
             self._fire_and_forget(self.voyante_turn(player))
-            return ('0', '0')
-        elif new_role == 'voleur':
+            return ("0", "0")
+        elif new_role == "voleur":
             return await self.voleur_turn(player)
-        elif new_role == 'noiseuse':
+        elif new_role == "noiseuse":
             return await self.noiseuse_turn(player)
-        elif new_role == 'soulard':
+        elif new_role == "soulard":
             return await self.soulard_turn(player)
 
     async def loup_garou_turn(self, active_players=None):
@@ -157,45 +158,42 @@ class Game:
         the players are the one in initial distribution.
         """
         if active_players is None:
-            active_players = self._get_player_nick(['loup garou'])
+            active_players = self._get_player_nick(["loup garou"])
         if not active_players:
             return
         elif isinstance(active_players, list):
             # notify players in fire and forget mode
             msg = "Les loups garous sont {}.".format(
-                ' et '.join(active_players)
+                " et ".join(active_players)
             )
             for player in active_players:
                 self._fire_and_forget(notify_player(player, msg, self.bot))
         else:
-            msg = ("Tu es le seul loup garou, indique une carte du milieu "
-                   "que tu veux découvrir. (0, 1 ou 2)")
+            msg = (
+                "Tu es le seul loup garou, indique une carte du milieu "
+                "que tu veux découvrir. (0, 1 ou 2)"
+            )
             await notify_player(active_players, msg, self.bot)
-            choice = await get_choice(active_players,
-                                      ('0', '1', '2'),
-                                      self.bot)
+            choice = await get_choice(
+                active_players, ("0", "1", "2"), self.bot
+            )
             msg = "la carte {} est le rôle {}.".format(
-                choice,
-                self.initial_roles[choice]
+                choice, self.initial_roles[choice]
             )
-            self._fire_and_forget(
-                notify_player(active_players, msg, self.bot)
-            )
+            self._fire_and_forget(notify_player(active_players, msg, self.bot))
 
     async def sbire_turn(self, sbire=None):
         """Execute sbire's turn.
 
         This turn is independant of other turns.
         """
-        lgs = self._get_player_nick(['loup garou'])
+        lgs = self._get_player_nick(["loup garou"])
         if sbire is None:
-            sbire = self._get_player_nick(['sbire'])
+            sbire = self._get_player_nick(["sbire"])
         if sbire:
             if lgs:
                 if isinstance(lgs, list):
-                    msg = "Les loups garous sont {}.".format(
-                        ' et '.join(lgs)
-                    )
+                    msg = "Les loups garous sont {}.".format(" et ".join(lgs))
                 else:
                     msg = "Le loup garou est {}.".format(lgs)
             else:
@@ -207,11 +205,11 @@ class Game:
 
         This turn is independant of the other turns.
         """
-        frama = self._get_player_nick(['franc maçon'])
+        frama = self._get_player_nick(["franc maçon"])
         if not frama:
             return
         elif isinstance(frama, list):
-            msg = "Il y a 2 franc-maçons ({}).".format(' et '.join(frama))
+            msg = "Il y a 2 franc-maçons ({}).".format(" et ".join(frama))
             for player in frama:
                 self._fire_and_forget(notify_player(player, msg, self.bot))
         else:
@@ -228,28 +226,27 @@ class Game:
 
         """
         if voyante is None:
-            voyante = self._get_player_nick(['voyante'])
+            voyante = self._get_player_nick(["voyante"])
         if not voyante:
             return
 
-        msg = ("Quelle carte veux-tu voir? "
-               "Si tu choisis une des cartes du milieu, "
-               "tu pourras en regarder une autre "
-               "du milieu.")
+        msg = (
+            "Quelle carte veux-tu voir? "
+            "Si tu choisis une des cartes du milieu, tu pourras en regarder "
+            "une autre du milieu."
+        )
         await notify_player(voyante, msg, self.bot)
         choice = await get_choice(voyante, self.players, self.bot)
         msg = "Le role de {} est {}.".format(
-            choice,
-            self.ante_initial_roles[choice]
+            choice, self.ante_initial_roles[choice]
         )
         await notify_player(voyante, msg, self.bot)
 
-        if choice in ('0', '1', '2'):
-            msg = ("Quelle carte veux tu regarder?")
-            choice = await get_choice(voyante, ('0', '1', '2'), self.bot)
+        if choice in ("0", "1", "2"):
+            msg = "Quelle carte veux tu regarder?"
+            choice = await get_choice(voyante, ("0", "1", "2"), self.bot)
             msg = "Le role de {} est {}.".format(
-                choice,
-                self.ante_initial_roles[choice]
+                choice, self.ante_initial_roles[choice]
             )
             self._fire_and_forget(notify_player(voyante, msg, self.bot))
 
@@ -262,15 +259,15 @@ class Game:
             tuple: the 2 roles to switch.
         """
         if voleur is None:
-            voleur = self._get_player_nick(['voleur'])
+            voleur = self._get_player_nick(["voleur"])
         if not voleur:
-            return ('0', '0')
-        msg = ("Choisis quelle carte tu veux voler.")
+            return ("0", "0")
+        msg = "Choisis quelle carte tu veux voler."
         await notify_player(voleur, msg, self.bot)
         choice = await get_choice(
             voleur,
             [player for player in self.players[3:] if player != voleur],
-            self.bot
+            self.bot,
         )
         msg = "Ton nouveau rôle est {}".format(self.initial_roles[choice])
         self._fire_and_forget(notify_player(voleur, msg, self.bot))
@@ -283,21 +280,25 @@ class Game:
             tuple: the 2 roles to switch.
         """
         if noiseuse is None:
-            noiseuse = self._get_player_nick(['noiseuse'])
-        msg = ("Choisis les 2 personnes dont tu veux inverser les rôles.\n"
-               "Première personne.")
-        choice = [player for player in self.players[3:]
-                  if player != noiseuse]
+            noiseuse = self._get_player_nick(["noiseuse"])
+        msg = (
+            "Choisis les 2 personnes dont tu veux inverser les rôles.\n"
+            "Première personne."
+        )
+        choice = [player for player in self.players[3:] if player != noiseuse]
         if not noiseuse:
-            return ('0', '0')
+            return ("0", "0")
         await notify_player(noiseuse, msg, self.bot)
         first = await get_choice(noiseuse, choice, self.bot)
 
-        choice = [player for player in self.players[3:]
-                  if player not in (choice, noiseuse)]
+        choice = [
+            player
+            for player in self.players[3:]
+            if player not in (choice, noiseuse)
+        ]
         msg = "Deuxième personne."
         await notify_player(noiseuse, msg, self.bot)
-        second = await get_choice(noiseuse, choice,  self.bot)
+        second = await get_choice(noiseuse, choice, self.bot)
         return (first, second)
 
     async def soulard_turn(self, soulard=None):
@@ -307,12 +308,12 @@ class Game:
             tuple: the 2 roles to switch.
         """
         if soulard is None:
-            soulard = self._get_player_nick(['soulard'])
-        msg = ("Choisis la carte que tu veux echanger avec toi-même.")
+            soulard = self._get_player_nick(["soulard"])
+        msg = "Choisis la carte que tu veux echanger avec toi-même."
         if not soulard:
-            return ('0', '0')
+            return ("0", "0")
         await notify_player(soulard, msg, self.bot)
-        choice = await get_choice(soulard, ('0', '1',  '2'), self.bot)
+        choice = await get_choice(soulard, ("0", "1", "2"), self.bot)
         return (soulard, choice)
 
     async def insomniaque_turn(self, doppel=False):
@@ -325,9 +326,9 @@ class Game:
         doppelgänger.
         """
         if doppel:
-            player = self._get_player_nick(['doppelgänger'])
+            player = self._get_player_nick(["doppelgänger"])
         else:
-            player = self._get_player_nick(['insomniaque'])
+            player = self._get_player_nick(["insomniaque"])
         if not player:
             return
         msg = "Ton rôle est à présent {}.".format(self.current_roles[player])
@@ -339,10 +340,19 @@ class Game:
         Return:
             tuple: (winning side(string), winning players (list of nick))
         """
-        meute = self._get_player_nick(['loup garou', 'sbire'])
+        meute = self._get_player_nick(["loup garou", "sbire"])
         villageois = self._get_player_nick(
-            ['chasseur', 'doppelgänger', 'franc macon', 'voyante', 'voleur',
-             'noiseuse', 'soulars', 'insomniaque', 'villageois']
+            [
+                "chasseur",
+                "doppelgänger",
+                "franc macon",
+                "voyante",
+                "voleur",
+                "noiseuse",
+                "soulars",
+                "insomniaque",
+                "villageois",
+            ]
         )
         if villageois is None:
             villageois = []
@@ -352,46 +362,53 @@ class Game:
             meute = [meute]
 
         if not self.dead:
-            if self._get_player_nick(['loup garou']):
-                return ('la meute', meute)
+            if self._get_player_nick(["loup garou"]):
+                return ("la meute", meute)
             else:
-                return ('le village', villageois)
+                return ("le village", villageois)
 
-        if ((self.current_roles[self.dead[0]] == 'doppelgänger'
-             and self.doppelganger_choice == 'chasseur')
-                or self.current_roles[self.dead[0]] == 'chasseur'):
+        if (
+            self.current_roles[self.dead[0]] == "doppelgänger"
+            and self.doppelganger_choice == "chasseur"
+        ) or self.current_roles[self.dead[0]] == "chasseur":
             if not self.votes.get(self.dead[0]):
-                msg = ("Chasseur, tu es mort et tu n'as voté contre"
-                       "personne pendant la nuit. "
-                       "Qui veux-tu emporter avec toi?")
+                msg = (
+                    "Chasseur, tu es mort et tu n'as voté contre"
+                    "personne pendant la nuit. "
+                    "Qui veux-tu emporter avec toi?"
+                )
                 await notify_player(self.dead[0], msg, self.bot)
                 await self._vote(self.dead[0])
             self.dead.append(self.votes[self.dead[0]])
 
-        if self._get_player_nick(['tanneur']) in self.dead:
-            if (self._get_player_nick('loup garou')
-                and any(player in self.dead
-                        for player in self._get_player_nick(['loup garou']))):
-                return ('le tanneur', self._get_player_nick(['tanneur']))
+        if self._get_player_nick(["tanneur"]) in self.dead:
+            if self._get_player_nick("loup garou") and any(
+                player in self.dead
+                for player in self._get_player_nick(["loup garou"])
+            ):
+                return ("le tanneur", self._get_player_nick(["tanneur"]))
             else:
-                return ('le tanneur et le village',
-                        villageois + [self._get_player_nick('tanneur')])
+                return (
+                    "le tanneur et le village",
+                    villageois + [self._get_player_nick("tanneur")],
+                )
 
-        if (self._get_player_nick(['loup garou'])
-            and any(player in self.dead
-                    for player in self._get_player_nick(['loup garou']))):
-            return ('le village', villageois)
+        if self._get_player_nick(["loup garou"]) and any(
+            player in self.dead
+            for player in self._get_player_nick(["loup garou"])
+        ):
+            return ("le village", villageois)
 
-        if 'sbire' in self.dead:
-            if self._get_player_nick('loup garou'):
-                return ('la meute', meute)
+        if "sbire" in self.dead:
+            if self._get_player_nick("loup garou"):
+                return ("la meute", meute)
             else:
-                return ('le village', villageois)
+                return ("le village", villageois)
 
-        if self._get_player_nick('loup garou', 'sbire'):
-            return ('la meute', meute)
+        if self._get_player_nick("loup garou", "sbire"):
+            return ("la meute", meute)
         else:
-            return ('personne', None)
+            return ("personne", None)
 
     async def vote(self):
         """Perform vote."""
@@ -412,9 +429,15 @@ class Game:
             await asyncio.wait(self.tasks)
             self.tasks = []
         await self.doppelganger_turn()
-        first_turns = ('loup_garou_turn', 'sbire_turn', 'franc_macon_turn',
-                       'voyante_turn', 'voleur_turn', 'noiseuse_turn',
-                       'soulard_turn')
+        first_turns = (
+            "loup_garou_turn",
+            "sbire_turn",
+            "franc_macon_turn",
+            "voyante_turn",
+            "voleur_turn",
+            "noiseuse_turn",
+            "soulard_turn",
+        )
         for turn in first_turns:
             self._fire_and_forget(getattr(self, turn)())
 
@@ -422,11 +445,12 @@ class Game:
         switches = [turn.result() for turn in finished if turn.result()]
 
         for sw in switches:
-            (self.current_roles[sw[0]],
-             self.current_roles[sw[1]]) = (self.current_roles[sw[1]],
-                                           self.current_roles[sw[0]])
+            (self.current_roles[sw[0]], self.current_roles[sw[1]]) = (
+                self.current_roles[sw[1]],
+                self.current_roles[sw[0]],
+            )
         self._fire_and_forget(self.insomniaque_turn())
-        if self.doppelganger_choice == 'insomniaque':
+        if self.doppelganger_choice == "insomniaque":
             self._fire_and_forget(self.insomniaque_turn(True))
         await asyncio.wait(self.tasks)
 
@@ -438,9 +462,11 @@ class Game:
             timeout (int): maximal time (in seconds) before closing the votes.
         """
         if len(self.players) < 6 or len(self.players) > 13:
-            msg = ("Le nombre de joueurs n'est pas  bon. "
-                   "Il doit y avoir entre 3 et 10 joueurs, "
-                   "et non {}.").format(str(len(self.players) - 3))
+            msg = (
+                "Le nombre de joueurs n'est pas bon. "
+                "Il doit y avoir entre 3 et 10 joueurs, "
+                "et non {}."
+            ).format(str(len(self.players) - 3))
             await notify_player(None, msg, self.bot)
             return
 
@@ -453,17 +479,21 @@ class Game:
         self.deal_roles()
         await self.notify_player_roles()
 
-        msg = ("La nuit tombe sur le village. "
-               "Cependant, certains joueurs accomplissent une action "
-               "de manière furtive.")
+        msg = (
+            "La nuit tombe sur le village. "
+            "Cependant, certains joueurs accomplissent une action "
+            "de manière furtive."
+        )
         await notify_player(None, msg, self.bot)
 
         await self.night()
 
         # post-night action
-        msg = ("Le jour se lève sur le village. Le vote est ouvert. "
-               "Vous devez voter dans les {} prochaines secondes "
-               "pour la personne que vous voulez tuer.").format(str(timeout))
+        msg = (
+            "Le jour se lève sur le village. Le vote est ouvert. "
+            "Vous devez voter dans les {} prochaines secondes "
+            "pour la personne que vous voulez tuer."
+        ).format(str(timeout))
         await notify_player(None, msg, self.bot)
         await self.collect_votes(timeout)
         victory = await self.victory()
@@ -472,8 +502,8 @@ class Game:
         if self.dead:
             msg = "Le village a tué {} personne{}: {}".format(
                 len(self.dead),
-                's' if len(self.dead) > 1 else '',
-                ', '.join(self.dead)
+                "s" if len(self.dead) > 1 else "",
+                ", ".join(self.dead),
             )
         else:
             msg = "Le village n'a tué personne."
@@ -481,16 +511,19 @@ class Game:
 
         # repr of winners
         if victory[1] and isinstance(victory[1], (list, tuple)):
-            winners = ', '.join(victory[1])
+            winners = ", ".join(victory[1])
         elif victory[1]:
             winners = victory[1]
         else:
-            winners = ''
+            winners = ""
 
-        msg = ("C'est {} qui gagne{}, c'est à dire les joueurs suivant: "
-               "{}.").format(victory[0] if victory[0] else 'personne',
-                             'ent' if 'et' in victory[0] else '',
-                             winners)
+        msg = (
+            "C'est {} qui gagne{}, " "c'est à dire les joueurs suivant: {}."
+        ).format(
+            victory[0] if victory[0] else "personne",
+            "ent" if "et" in victory[0] else "",
+            winners,
+        )
         await notify_player(None, msg, self.bot)
         if winners:
             for player in victory[1]:
@@ -524,8 +557,7 @@ class Game:
             done, pending = await asyncio.wait(self.tasks, timeout=delay)
             if pending:
                 msg = "Il manque {} votes et il reste {} secondes.".format(
-                    len(pending),
-                    str(timeout - delay * run)
+                    len(pending), str(timeout - delay * run)
                 )
                 await notify_player(None, msg, self.bot)
             self.tasks = list(pending)
@@ -534,8 +566,10 @@ class Game:
             done, pending = await asyncio.wait(self.tasks, timeout=delay)
 
         if pending:
-            msg = (r"/!\ Certains n'ont pas eu le temps de voter. "
-                   "Tant pis pour eux.")
+            msg = (
+                r"/!\ Certains n'ont pas eu le temps de voter. "
+                "Tant pis pour eux."
+            )
             for tsk in pending:
                 tsk.cancel()
         self.tasks = []
@@ -547,12 +581,14 @@ class Game:
         elif len(results) > 1 and results[0][1] == results[1][1]:
 
             # Tie. 2nd vote:
-            choice = [player for player, votes in results
-                      if votes == results[0][1]]
-            msg = ("Il y a égalité entre {}. \nEn cas de nouvelle égalité, "
-                   "il n'y aura pas de mort."
-                   "\nVous avez {} secondes.").format(' et '.join(choice),
-                                                      str(delay))
+            choice = [
+                player for player, votes in results if votes == results[0][1]
+            ]
+            msg = (
+                "Il y a égalité entre {}.\n"
+                "En cas de nouvelle égalité, il n'y aura pas de mort.\n"
+                "Vous avez {} secondes."
+            ).format(" et ".join(choice), str(delay))
 
             await notify_player(None, msg, self.bot)
             self.votes = {}
@@ -564,8 +600,9 @@ class Game:
             self.tasks = []
             results = Counter(self.votes.values()).most_common()
 
-            if not results or (len(results) > 2
-                               and results[0][0] == results[1][1]):
+            if not results or (
+                len(results) > 2 and results[0][0] == results[1][1]
+            ):
                 msg = "Il n'y a pas de mort cette nuit."
                 await notify_player(None, msg, self.bot)
             return
@@ -582,9 +619,12 @@ class Game:
         other players.
         """
         if choice is None:
-            choice = [adv for adv in self.players
-                      if adv not in ('0', '1', '2', player)]
-        msg = ("Quelle personne veux-tu éliminer?")
+            choice = [
+                adv
+                for adv in self.players
+                if adv not in ("0", "1", "2", player)
+            ]
+        msg = "Quelle personne veux-tu éliminer?"
         await notify_player(player, msg, self.bot)
         result = await get_choice(player, choice, self.bot)
         self.votes[player] = result
@@ -597,8 +637,7 @@ class Game:
         Return:
             the player's choice.
         """
-        choices = [choice for choice in self.players[3:]
-                   if choice != player]
+        choices = [choice for choice in self.players[3:] if choice != player]
         msg = "Choisis qui tu veux tuer."
         await notify_player(player, msg, self.bot)
         return await get_choice(player, choices, self.bot)
@@ -615,8 +654,11 @@ class Game:
             cur_roles = self.ante_initial_roles
         else:
             cur_roles = self.current_roles
-        player = [nick for nick, role in cur_roles.items()
-                  if role in roles and nick not in ('0', '1', '2')]
+        player = [
+            nick
+            for nick, role in cur_roles.items()
+            if role in roles and nick not in ("0", "1", "2")
+        ]
         if len(player) == 2:
             return player
         if len(player) == 1:
