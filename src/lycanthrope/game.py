@@ -51,6 +51,9 @@ class Game:
         self.victories = Counter()
         self.bot = None
         self.in_progress = False
+        self.dealer = {}
+        self.dealer["Anarchie"] = deal_anarc
+        self.dealer["Classique"] = deal_anarc
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
@@ -83,21 +86,11 @@ class Game:
         elif nick in self.players:
             self.players.remove(nick)
 
-    def deal_roles(self):
+    def deal_roles(self, scenario="Classique"):
         """Maps each player to a role."""
         nb_player = len(self.players)
         nb_role = nb_player + 3
-
-        # select roles
-        roles = [role for role, nb in MAX_ROLE_NB.items() for _ in range(nb)]
-        shuffle(roles)
-
-        # deal manadatory roles if needed
-        selected_roles = roles[:nb_role]
-
-        for i, role in enumerate(MANDATORY_ROLES):
-            if role not in selected_roles:
-                selected_roles[i] = role
+        selected_roles = self.dealer[scenario](nb_role)
         shuffle(selected_roles)
 
         self.ante_initial_roles = dict(zip(self.players, selected_roles))
@@ -674,3 +667,23 @@ class Game:
         """
         tsk = asyncio.ensure_future(fun)
         self.tasks.append(tsk)
+
+
+def deal_anarc(nb_role, max_role_nb=MAX_ROLE_NB, mandatory=MANDATORY_ROLES):
+    """Deal role for the "Anarchie" scenario.
+
+    Args:
+        nb_role (int): number or role to deal.
+        max_role_nb (dict): maximum number of characters per roles.
+        mandatory (iterable): role that must be dealt.
+    """
+    roles = [role for role, nb in max_role_nb.items() for _ in range(nb)]
+    shuffle(roles)
+    selected_roles = roles[:nb_role]
+
+    # deal manadatory roles if needed
+    for i, role in enumerate(mandatory):
+        if role not in selected_roles:
+            selected_roles[i] = role
+
+    return selected_roles
