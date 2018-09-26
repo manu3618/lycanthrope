@@ -38,6 +38,8 @@ class Game:
         current_roles (dict): current distribution of roles.
     """
 
+    _role_callbacks = {}
+
     def __init__(self):
         self.roles = []
         self.ante_initial_roles = {}  # before doppelganger
@@ -52,11 +54,27 @@ class Game:
         self.bot = None
         self.in_progress = False
         self.dealer = {}
+        self.role_swaps = []  # list of tuple of exchanged roles.
         self.dealer["Anarchie"] = deal_anarc
         self.dealer["Classique"] = deal_anarc
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
+
+    @classmethod
+    def add_role(cls, role):
+        """Decorator. Add role callback
+
+        Args:
+            role: name of the role.
+        """
+        def decorator(func):
+            cls._role_callbacks[role] = func
+
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
 
     def add_player(self, nick):
         """Add the player <nick> to the game.
@@ -687,3 +705,8 @@ def deal_anarc(nb_role, max_role_nb=MAX_ROLE_NB, mandatory=MANDATORY_ROLES):
             selected_roles[i] = role
 
     return selected_roles
+
+
+@Game.add_role("doppelganger")
+def doppelganger(game, phase="night"):
+    pass
