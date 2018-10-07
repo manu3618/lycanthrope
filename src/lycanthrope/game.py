@@ -72,6 +72,12 @@ class Game:
             cls._role_callbacks[role] = func
 
             def wrapper(*args, **kwargs):
+                """Perform action the role must perform
+
+                Args:
+                    phase (str): (dawn|night|day)
+                    synchro (int): nb of synchronisation point for the phase.
+                """
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -114,6 +120,7 @@ class Game:
         self.ante_initial_roles = dict(zip(self.players, selected_roles))
         self.initial_roles = self.ante_initial_roles.copy()
         self.current_roles = self.initial_roles.copy()
+        self.dealt_roles = set(self.current_roles.values())
 
     async def notify_player_roles(self, initial=True):
         """Inform each player of its initial role.
@@ -439,6 +446,22 @@ class Game:
         if self.tasks:
             await asyncio.wait(self.tasks)
             self.tasks = []
+        for role in self.dealt_roles:
+            self._fire_and_forget(
+                self._role_callbacks[role](self, phase='night', synchro=0)
+            )
+
+        if self.tasks:
+            await asyncio.wait(self.tasks)
+            self.tasks = []
+        self.swap_roles()
+
+        for sw in self.switches:
+            (self.current_roles[sw[0]], self.current_roles[sw[1]]) = (
+                self.current_roles[sw[1]],
+                self.current_roles[sw[0]],
+            )
+
         await self.doppelganger_turn()
         first_turns = (
             "loup_garou_turn",
@@ -464,6 +487,14 @@ class Game:
         if self.doppelganger_choice == "insomniaque":
             self._fire_and_forget(self.insomniaque_turn(True))
         await asyncio.wait(self.tasks)
+
+    def swap_roles(self, switches):
+        """Perfomr swaps."""
+        for sw in switches:
+            (self.current_roles[sw[0]], self.current_roles[sw[1]]) = (
+                self.current_roles[sw[1]],
+                self.current_roles[sw[0]],
+            )
 
     async def game(self, timeout=300):
         """Begin the game. Assume all players are registered.
@@ -707,6 +738,66 @@ def deal_anarc(nb_role, max_role_nb=MAX_ROLE_NB, mandatory=MANDATORY_ROLES):
     return selected_roles
 
 
-@Game.add_role("doppelganger")
-def doppelganger(game, phase="night"):
+@Game.add_role('chasseur')
+async def chasseur(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role("doppelgänger")
+async def doppelganger(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('franc maçon')
+async def franc_macon(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('insomniaque')
+async def insomniaque(game, phase="night", synchro=0):
+    if phase == 'day':
+        player = next(
+            pl for pl, ro in game.initial_role.values() if ro == "insomiaque"
+        )
+        msg = "Ton rôle est à présent {}.".format(game.current_roles[player])
+        await notify_player(player, msg)
+
+
+@Game.add_role('loup garou')
+async def loup_garou(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('noiseuse')
+async def noiseuse(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('sbire')
+async def sbire(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('soulard')
+async def soulard(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('tanneur')
+async def tanneur(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('villageois')
+async def villageois(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('voleur')
+async def voleur(game, phase="night", synchro=0):
+    pass
+
+
+@Game.add_role('voyante')
+async def voyante(game, phase="night", synchro=0):
     pass

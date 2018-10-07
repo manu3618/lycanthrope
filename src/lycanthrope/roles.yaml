@@ -1,0 +1,79 @@
+characters:
+    chasseur:
+        description: >
+            Lorsque le chasseur meurt,
+            il tue immédiatement la personne de son choix.
+        order: # default: only awake during day
+        group: villageois  # defautl: villageois
+    doppelgänger:
+        description: Copie le rôle d'un autre joueur.
+        order:
+    franc maçon: >
+        Villageois comme les autres. Lors de son tour,
+        ils prennent connaissance de l'identité des autres franc-maçon.
+    insomniaque:
+        description: Regarde sa carte.
+        order:
+    loup garou:
+        description: >
+            Le but des loup garou est de ne pas se faire détecter.
+            Si l'un d'entre eux meurt, ils ne gagnent pas. Lors de leur tour,
+            ils se reconnaissent. S'il n'y a qu'un loup garou,
+            il prends connaissance d'une carte au centre.
+        order:
+        group: loups garous
+    noiseuse:
+        description: Intervertie 2 rôles qui ne sont pas elle.
+        order:
+    sbire:
+        description: >
+            Ce joueur fait parti de la meute de loups garous.
+            Son but est de faire gagner les loups garous
+        order:
+    soulard:
+        description:  Échange sa carte avec une du centre sans les regarder.
+        order:
+    tanneur:
+        description: Le but du taneur est de mourir.
+        order:
+    voleur:
+        description: >
+            Échange sa carte avec n'importe quel autre joueur
+            et prends connaissance de son nouveau rôle.
+        order:
+    voyante:
+        description: >
+            Villageoise. Elle prends connaissance du rôle de
+            n'importe quel autre joueur ou de 2 cartes du centre.
+        order:
+
+
+scenario:
+    loups-garous contre village:
+        Classique:
+            description: Loup garou pour une nuit, le jeu classique.
+            artefact: false
+            token: false
+            mandatory: [loup garou, voyante]
+            max:
+                chasseur: 1
+                doppelgänger: 1
+                franc maçon: 2
+                insomniaque: 1
+                loup garou: 2
+                noiseuse: 1
+                sbire: 1
+                soulard: 1
+                tanneur: 1
+                villageois: 3
+                voleur: 1
+                voyante: 1
+        Première nuit:
+            description:
+            artefact: false
+            token: false
+            ordered roles: [loup garou, loup shaman, voyante, voleur, gremlin,
+                            villageois, vollageois, chose]
+    vampires contre village:
+    batailles épiques:
+        anarchie:
