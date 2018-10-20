@@ -36,7 +36,7 @@ characters:
         description:  Échange sa carte avec une du centre sans les regarder.
         order: 7
     tanneur:
-        description: Le but du taneur est de mourir.
+        description: Le but du tanneur est de mourir.
         order: 9
     voleur:
         description: >

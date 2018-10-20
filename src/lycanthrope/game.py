@@ -1,5 +1,6 @@
 import asyncio
 from collections import Counter
+from itertools import chain
 from os.path import dirname, join, realpath
 from random import shuffle
 
@@ -118,8 +119,7 @@ class Game:
         selected_roles = self.dealer[scenario](nb_role)
         shuffle(selected_roles)
 
-        self.ante_initial_roles = dict(zip(self.players, selected_roles))
-        self.initial_roles = self.ante_initial_roles.copy()
+        self.initial_roles = dict(zip(self.players, selected_roles))
         self.current_roles = self.initial_roles.copy()
         self.dealt_roles = set(self.current_roles.values())
 
@@ -137,157 +137,6 @@ class Game:
         for player in self.players[3:]:
             msg = "Tu es {}".format(roles[player])
             self._fire_and_forget(notify_player(player, msg, self.bot))
-
-    async def loup_garou_turn(self, active_players=None):
-        """Execute loup garou's turn.
-
-        This turn is independant of other turns.
-
-        Args:
-            active_players: players making the loup_garou turn. If None,
-        the players are the one in initial distribution.
-        """
-        if active_players is None:
-            active_players = self._get_player_nick(["loup garou"])
-        if not active_players:
-            return
-        elif isinstance(active_players, list):
-            # notify players in fire and forget mode
-            msg = "Les loups garous sont {}.".format(
-                " et ".join(active_players)
-            )
-            for player in active_players:
-                self._fire_and_forget(notify_player(player, msg, self.bot))
-        else:
-            msg = (
-                "Tu es le seul loup garou, indique une carte du milieu "
-                "que tu veux découvrir. (0, 1 ou 2)"
-            )
-            await notify_player(active_players, msg, self.bot)
-            choice = await get_choice(
-                active_players, ("0", "1", "2"), self.bot
-            )
-            msg = "la carte {} est le rôle {}.".format(
-                choice, self.initial_roles[choice]
-            )
-            self._fire_and_forget(notify_player(active_players, msg, self.bot))
-
-    async def sbire_turn(self, sbire=None):
-        """Execute sbire's turn.
-
-        This turn is independant of other turns.
-        """
-        lgs = self._get_player_nick(["loup garou"])
-        if sbire is None:
-            sbire = self._get_player_nick(["sbire"])
-        if sbire:
-            if lgs:
-                if isinstance(lgs, list):
-                    msg = "Les loups garous sont {}.".format(" et ".join(lgs))
-                else:
-                    msg = "Le loup garou est {}.".format(lgs)
-            else:
-                msg = "il n'y a pas de loup garou."
-            self._fire_and_forget(notify_player(sbire, msg, self.bot))
-
-    async def franc_macon_turn(self):
-        """Execute franc macon's turn.
-
-        This turn is independant of the other turns.
-        """
-        frama = self._get_player_nick(["franc maçon"])
-        if not frama:
-            return
-        elif isinstance(frama, list):
-            msg = "Il y a 2 franc-maçons ({}).".format(" et ".join(frama))
-            for player in frama:
-                self._fire_and_forget(notify_player(player, msg, self.bot))
-        else:
-            msg = "Tu es le seul franc maçon."
-            self._fire_and_forget(notify_player(frama, msg, self.bot))
-
-    async def voyante_turn(self, voyante=None):
-        """Execute the voyante's turn.
-
-        This turn is independant of the other turns.
-
-        Args:
-            voyante: the player performing the action.
-
-        """
-        if voyante is None:
-            voyante = self._get_player_nick(["voyante"])
-        if not voyante:
-            return
-
-        msg = (
-            "Quelle carte veux-tu voir? "
-            "Si tu choisis une des cartes du milieu, tu pourras en regarder "
-            "une autre du milieu."
-        )
-        await notify_player(voyante, msg, self.bot)
-        choice = await get_choice(voyante, self.players, self.bot)
-        msg = "Le role de {} est {}.".format(
-            choice, self.ante_initial_roles[choice]
-        )
-        await notify_player(voyante, msg, self.bot)
-
-        if choice in ("0", "1", "2"):
-            msg = "Quelle carte veux tu regarder?"
-            choice = await get_choice(voyante, ("0", "1", "2"), self.bot)
-            msg = "Le role de {} est {}.".format(
-                choice, self.ante_initial_roles[choice]
-            )
-            self._fire_and_forget(notify_player(voyante, msg, self.bot))
-
-    async def voleur_turn(self, voleur=None):
-        """Execute the voleur's turn.
-
-        Args:
-            player (string): the player performing the turn
-        Return:
-            tuple: the 2 roles to switch.
-        """
-        if voleur is None:
-            voleur = self._get_player_nick(["voleur"])
-        if not voleur:
-            return ("0", "0")
-        msg = "Choisis quelle carte tu veux voler."
-        await notify_player(voleur, msg, self.bot)
-        choice = await get_choice(
-            voleur,
-            [player for player in self.players[3:] if player != voleur],
-            self.bot,
-        )
-        msg = "Ton nouveau rôle est {}".format(self.initial_roles[choice])
-        self._fire_and_forget(notify_player(voleur, msg, self.bot))
-        return (voleur, choice)
-
-    async def soulard_turn(self, soulard=None):
-        """Execute the soulard's turn.
-
-        Return:
-            tuple: the 2 roles to switch.
-        """
-        if soulard is None:
-            soulard = self._get_player_nick(["soulard"])
-        msg = "Choisis la carte que tu veux echanger avec toi-même."
-        if not soulard:
-            return ("0", "0")
-        await notify_player(soulard, msg, self.bot)
-        choice = await get_choice(soulard, ("0", "1", "2"), self.bot)
-        return (soulard, choice)
-
-    async def insomniaque_turn(self):
-        """Execute insomniaque's turn.
-
-        Must be executed after all switches are done.
-        """
-        player = self._get_player_nick(["insomniaque"])
-        if not player:
-            return
-        msg = "Ton rôle est à présent {}.".format(self.current_roles[player])
-        await notify_player(player, msg, self.bot)
 
     async def victory(self):
         """Compute victory.
@@ -390,8 +239,7 @@ class Game:
         # execute roles with synchro points
         for role in roles:
             if role.get("synchro") is not None:
-                if self.tasks:
-                    await asyncio.wait(self.tasks)
+                await self.clean_up()
                 self.swap_roles(self.role_swaps)
                 self.role_swaps = []
 
@@ -401,9 +249,7 @@ class Game:
                 )
             )
 
-        if self.tasks:
-            await asyncio.wait(self.tasks)
-            self.tasks = []
+        await self.clean_up()
         self.swap_roles(self.role_swaps)
 
     def swap_roles(self, switches):
@@ -611,7 +457,7 @@ class Game:
         otherwise, search in current  distribution.
         """
         if initial:
-            cur_roles = self.ante_initial_roles
+            cur_roles = self.initial_roles
         else:
             cur_roles = self.current_roles
         player = [
@@ -663,7 +509,20 @@ async def chasseur(game, phase="night", synchro=0):
 
 @Game.add_role('franc maçon')
 async def franc_macon(game, phase="night", synchro=0):
-    pass
+    """Execute franc macon's turn.
+
+    This turn is independant of the other turns.
+    """
+    frama = game._get_player_nick(["franc maçon"])
+    if not frama:
+        return
+    elif isinstance(frama, list):
+        msg = "Il y a 2 franc-maçons ({}).".format(" et ".join(frama))
+        for player in frama:
+            game._fire_and_forget(notify_player(player, msg, game.bot))
+    else:
+        msg = "Tu es le seul franc maçon."
+        game._fire_and_forget(notify_player(frama, msg, game.bot))
 
 
 @Game.add_role('insomniaque')
@@ -678,7 +537,36 @@ async def insomniaque(game, phase="night", synchro=0):
 
 @Game.add_role('loup garou')
 async def loup_garou(game, phase="night", synchro=0):
-    pass
+    loups = list(chain(game._get_player_nick(role) for role in [
+        "loup alpha", "loup garou", "loup shaman"
+    ]))
+    loup_reveur = game._get_player_nick("loup rêveur")
+
+    if not loups:
+        return
+    if isinstance(loups, list):
+        msg = "Les {} loups garous sont {}.".format(
+            str(len(loups)), " et ".join(loups)
+        )
+        for player in loups:
+            game._fire_and_forget(notify_player(player, msg, game.bot))
+    elif not loup_reveur:
+        msg = (
+            "Tu es le seul loup garou, indique une carte du milieu "
+            "que tu veux découvrir. (0, 1 ou 2)"
+        )
+        await notify_player(loups, msg, game.bot)
+        choice = await get_choice(loups, ("0", "1", "2"), game.bot)
+        await game.clean_up()
+        msg = "la carte {} est le rôle {}.".format(
+            choice, game.initial_roles[choice]
+        )
+        game._fire_and_forget(notify_player(loups, msg, game.bot))
+
+    if loup_reveur:
+        msg = "Le loup rêveur est ." + loup_reveur
+        for players in loups:
+            game._fire_and_forget(notify_player(player, msg, game.bot))
 
 
 @Game.add_role('noiseuse')
@@ -713,17 +601,37 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     await notify_player(noiseuse, msg, game.bot)
     second = await get_choice(noiseuse, choice, game.bot)
 
-    game.role_swaps.add((first, second))
+    game.role_swaps.append((first, second))
 
 
 @Game.add_role('sbire')
 async def sbire(game, phase="night", synchro=0):
-    pass
+    """Execute sbire's turn.
+
+    This turn is independant of other turns.
+    """
+    loups = list(chain(game._get_player_nick(role) for role in [
+        "loup alpha", "loup garou", "loup shaman", "loup rêveur"
+    ]))
+    sbire = game._get_player_nick("sbire")
+    if sbire and loups:
+        msg = "Il y a {} loup garou ({}).".format(
+            len(loups), ', '.format(loups)
+        )
+        game._fire_and_forget(notify_player(sbire, msg, game.bot))
 
 
 @Game.add_role('soulard')
 async def soulard(game, phase="night", synchro=0):
-    pass
+    """Execute the soulard's turn."""
+    soulard = game._get_player_nick(["soulard"])
+    if not soulard:
+        return
+
+    msg = "Choisis la carte que tu veux echanger avec toi-même."
+    await notify_player(soulard, msg, game.bot)
+    choice = await get_choice(soulard, ("0", "1", "2"), game.bot)
+    game.role_swaps.append((soulard, choice))
 
 
 @Game.add_role('tanneur')
@@ -738,12 +646,51 @@ async def villageois(game, phase="night", synchro=0):
 
 @Game.add_role('voleur')
 async def voleur(game, phase="night", synchro=0):
-    pass
+    """Execute the voleur's turn."""
+    voleur = game._get_player_nick(["voleur"])
+    if not voleur:
+        return
+    msg = "Choisis quelle carte tu veux voler."
+    await notify_player(voleur, msg, game.bot)
+    choice = await get_choice(
+        voleur,
+        [player for player in game.players[3:] if player != voleur],
+        game.bot,
+    )
+    msg = "Ton nouveau rôle est {}".format(game.initial_roles[choice])
+    game._fire_and_forget(notify_player(voleur, msg, game.bot))
+    return game.role_swaps.append((voleur, choice))
 
 
 @Game.add_role('voyante')
 async def voyante(game, phase="night", synchro=0):
-    pass
+    """Execute the voyante's turn.
+
+    This turn is independant of the other turns.
+    """
+    voyante = game._get_player_nick(["voyante"])
+    if not voyante:
+        return
+
+    msg = (
+        "Quelle carte veux-tu voir? "
+        "Si tu choisis une des cartes du milieu, tu pourras en regarder "
+        "une autre du milieu."
+    )
+    await notify_player(voyante, msg, game.bot)
+    choice = await get_choice(voyante, game.players, game.bot)
+    msg = "Le role de {} est {}.".format(
+        choice, game.initial_roles[choice]
+    )
+    await notify_player(voyante, msg, game.bot)
+
+    if choice in ("0", "1", "2"):
+        msg = "Quelle carte veux tu regarder?"
+        choice = await get_choice(voyante, ("0", "1", "2"), game.bot)
+        msg = "Le role de {} est {}.".format(
+            choice, game.initial_roles[choice]
+        )
+        game._fire_and_forget(notify_player(voyante, msg, game.bot))
 
 
 def get_roles(filename):
