@@ -1,6 +1,9 @@
 import asyncio
 from collections import Counter
+from os.path import dirname, join, realpath
 from random import shuffle
+
+import yaml
 
 from .irc import get_choice, notify_player
 
@@ -60,6 +63,7 @@ class Game:
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
+        self.available_roles = get_roles("roles.yaml").get("characters")
 
     @classmethod
     def add_role(cls, role):
@@ -137,34 +141,6 @@ class Game:
             msg = "Tu es {}".format(roles[player])
             self._fire_and_forget(notify_player(player, msg, self.bot))
 
-    async def doppelganger_turn(self):
-        """Execute the doppelgänger's turn."""
-        player = self._get_player_nick("doppelgänger")
-        if not player:
-            return ("0", "0")
-
-        choices = [adv for adv in self.players[3:] if adv != player]
-        msg = "Choisis qui tu vas imiter cette nuit."
-        await notify_player(player, msg, self.bot)
-        choice = await get_choice(player, choices, self.bot)
-        new_role = self.doppelganger_choice = self.initial_roles[choice]
-        msg = "Tu es maintenant {}".format(new_role)
-        self._fire_and_forget(notify_player(player, msg, self.bot))
-        if new_role == "sbire":
-            asyncio.ensure_future(self.sbire_turn(player))
-            return ("0", "0")
-        elif new_role in ("loup garou", "franc macon"):
-            self.initial_roles[player] = self.initial_roles[choice]
-            return ("0", "0")
-        elif new_role == "voyante":
-            self._fire_and_forget(self.voyante_turn(player))
-            return ("0", "0")
-        elif new_role == "voleur":
-            return await self.voleur_turn(player)
-        elif new_role == "noiseuse":
-            return await self.noiseuse_turn(player)
-        elif new_role == "soulard":
-            return await self.soulard_turn(player)
 
     async def loup_garou_turn(self, active_players=None):
         """Execute loup garou's turn.
@@ -291,33 +267,6 @@ class Game:
         self._fire_and_forget(notify_player(voleur, msg, self.bot))
         return (voleur, choice)
 
-    async def noiseuse_turn(self, noiseuse=None):
-        """Execute the noiseuse's turn.
-
-        Return:
-            tuple: the 2 roles to switch.
-        """
-        if noiseuse is None:
-            noiseuse = self._get_player_nick(["noiseuse"])
-        msg = (
-            "Choisis les 2 personnes dont tu veux inverser les rôles.\n"
-            "Première personne."
-        )
-        choice = [player for player in self.players[3:] if player != noiseuse]
-        if not noiseuse:
-            return ("0", "0")
-        await notify_player(noiseuse, msg, self.bot)
-        first = await get_choice(noiseuse, choice, self.bot)
-
-        choice = [
-            player
-            for player in self.players[3:]
-            if player not in (choice, noiseuse)
-        ]
-        msg = "Deuxième personne."
-        await notify_player(noiseuse, msg, self.bot)
-        second = await get_choice(noiseuse, choice, self.bot)
-        return (first, second)
 
     async def soulard_turn(self, soulard=None):
         """Execute the soulard's turn.
@@ -446,50 +395,34 @@ class Game:
         if self.tasks:
             await asyncio.wait(self.tasks)
             self.tasks = []
-        for role in self.dealt_roles:
+
+        # order roles:
+        roles = [{name: descr}
+                 for name, descr in self.available_roles.items()
+                 if name in self.dealt_roles]
+        roles.sort(key=lambda x: str(x.get("order", "100")))
+
+        # execute roles with synchro points
+        for role in roles:
+            if role.get("synchro") is not None:
+                if self.tasks:
+                    await asyncio.wait(self.tasks)
+                self.swap_roles(self.role_swaps)
+                self.role_swaps = []
+
             self._fire_and_forget(
-                self._role_callbacks[role](self, phase='night', synchro=0)
+                self._role_callbacks[list(role)[0]](
+                    self, phase='night', synchro=role.get("synchro")
+                )
             )
 
         if self.tasks:
             await asyncio.wait(self.tasks)
             self.tasks = []
-        self.swap_roles()
-
-        for sw in self.switches:
-            (self.current_roles[sw[0]], self.current_roles[sw[1]]) = (
-                self.current_roles[sw[1]],
-                self.current_roles[sw[0]],
-            )
-
-        await self.doppelganger_turn()
-        first_turns = (
-            "loup_garou_turn",
-            "sbire_turn",
-            "franc_macon_turn",
-            "voyante_turn",
-            "voleur_turn",
-            "noiseuse_turn",
-            "soulard_turn",
-        )
-        for turn in first_turns:
-            self._fire_and_forget(getattr(self, turn)())
-
-        finished, _ = await asyncio.wait(self.tasks)
-        switches = [turn.result() for turn in finished if turn.result()]
-
-        for sw in switches:
-            (self.current_roles[sw[0]], self.current_roles[sw[1]]) = (
-                self.current_roles[sw[1]],
-                self.current_roles[sw[0]],
-            )
-        self._fire_and_forget(self.insomniaque_turn())
-        if self.doppelganger_choice == "insomniaque":
-            self._fire_and_forget(self.insomniaque_turn(True))
-        await asyncio.wait(self.tasks)
+        self.swap_roles(self.role_swaps)
 
     def swap_roles(self, switches):
-        """Perfomr swaps."""
+        """Perform swaps."""
         for sw in switches:
             (self.current_roles[sw[0]], self.current_roles[sw[1]]) = (
                 self.current_roles[sw[1]],
@@ -745,7 +678,35 @@ async def chasseur(game, phase="night", synchro=0):
 
 @Game.add_role("doppelgänger")
 async def doppelganger(game, phase="night", synchro=0):
-    pass
+    """Execute the doppelgänger's turn."""
+    player = game._get_player_nick("doppelgänger")
+    if not player:
+        return
+    if synchro == 0:
+        choices = [adv for adv in game.players[3:] if adv != player]
+        msg = "Choisis qui tu vas imiter cette nuit."
+        await notify_player(player, msg, game.bot)
+        choice = await get_choice(player, choices, game.bot)
+        new_role = game.doppelganger_choice = game.initial_roles[choice]
+        msg = "Tu es maintenant {}".format(new_role)
+        game._fire_and_forget(notify_player(player, msg, game.bot))
+        return
+
+    if new_role == "sbire":
+        asyncio.ensure_future(game.sbire_turn(player))
+        return
+    elif new_role in ("loup garou", "franc macon"):
+        game.initial_roles[player] = game.initial_roles[choice]
+        return
+    elif new_role == "voyante":
+        game._fire_and_forget(game.voyante_turn(player))
+        return
+    elif new_role == "voleur":
+        return await game.voleur_turn(player)
+    elif new_role == "noiseuse":
+        return await game.noiseuse_turn(player)
+    elif new_role == "soulard":
+        return await game.soulard_turn(player)
 
 
 @Game.add_role('franc maçon')
@@ -769,8 +730,38 @@ async def loup_garou(game, phase="night", synchro=0):
 
 
 @Game.add_role('noiseuse')
-async def noiseuse(game, phase="night", synchro=0):
-    pass
+async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
+    """Execute the noiseuse's turn.
+
+    Args:
+        noiseuse (str): noiseuse's nickname
+
+    Return:
+        tuple: the 2 roles to switch.
+    """
+    if noiseuse is None:
+        noiseuse = game._get_player_nick(["noiseuse"])
+    if not noiseuse:
+        return
+
+    msg = (
+        "Choisis les 2 personnes dont tu veux inverser les rôles.\n"
+        "Première personne."
+    )
+    choice = [player for player in game.players[3:] if player != noiseuse]
+    await notify_player(noiseuse, msg, game.bot)
+    first = await get_choice(noiseuse, choice, game.bot)
+
+    choice = [
+        player
+        for player in game.players[3:]
+        if player not in (choice, noiseuse)
+    ]
+    msg = "Deuxième personne."
+    await notify_player(noiseuse, msg, game.bot)
+    second = await get_choice(noiseuse, choice, game.bot)
+
+    game.role_swaps.add((first, second))
 
 
 @Game.add_role('sbire')
@@ -801,3 +792,8 @@ async def voleur(game, phase="night", synchro=0):
 @Game.add_role('voyante')
 async def voyante(game, phase="night", synchro=0):
     pass
+
+
+def get_roles(filename):
+    with open(join(dirname(realpath(__file__)), filename)) as fp:
+        return yaml.load(fp.read())

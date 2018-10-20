@@ -5,47 +5,52 @@ characters:
             il tue immédiatement la personne de son choix.
         order: # default: only awake during day
         group: villageois  # defautl: villageois
+        synchro: # default: no synchornization needed
     doppelgänger:
         description: Copie le rôle d'un autre joueur.
-        order:
-    franc maçon: >
-        Villageois comme les autres. Lors de son tour,
-        ils prennent connaissance de l'identité des autres franc-maçon.
+        order: -100
+    franc maçon:
+        description: >
+            Villageois comme les autres. Lors de son tour,
+            ils prennent connaissance de l'identité des autres franc-maçon.
+        order: 4
     insomniaque:
         description: Regarde sa carte.
-        order:
+        order: 9
+        synchro: 9
     loup garou:
         description: >
             Le but des loup garou est de ne pas se faire détecter.
             Si l'un d'entre eux meurt, ils ne gagnent pas. Lors de leur tour,
             ils se reconnaissent. S'il n'y a qu'un loup garou,
             il prends connaissance d'une carte au centre.
-        order:
+        order: 2
         group: loups garous
     noiseuse:
         description: Intervertie 2 rôles qui ne sont pas elle.
-        order:
+        order: 7
     sbire:
         description: >
             Ce joueur fait parti de la meute de loups garous.
             Son but est de faire gagner les loups garous
-        order:
+        order: 3
+        group: loups garous
     soulard:
         description:  Échange sa carte avec une du centre sans les regarder.
-        order:
+        order: 7
     tanneur:
         description: Le but du taneur est de mourir.
-        order:
+        order: 9
     voleur:
         description: >
             Échange sa carte avec n'importe quel autre joueur
             et prends connaissance de son nouveau rôle.
-        order:
+        order: 6
     voyante:
         description: >
             Villageoise. Elle prends connaissance du rôle de
             n'importe quel autre joueur ou de 2 cartes du centre.
-        order:
+        order: 5
 
 
 scenario:
