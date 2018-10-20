@@ -6,9 +6,6 @@ characters:
         order: # default: only awake during day
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
-    doppelgänger:
-        description: Copie le rôle d'un autre joueur.
-        order: -100
     franc maçon:
         description: >
             Villageois comme les autres. Lors de son tour,

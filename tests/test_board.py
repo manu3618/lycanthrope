@@ -269,7 +269,7 @@ def distributions():
 @pytest.mark.asyncio
 @pytest.mark.parametrize('distribution', distributions())
 async def test_victory(distribution):
-    """Test voctory computing."""
+    """Test victory computing."""
     with open(MOCK_IRC_FILE, 'a') as fd:
         fd.write("\n===== TEST victory =====\n")
 
@@ -283,7 +283,6 @@ async def test_victory(distribution):
 
             for player in real_players:
                 game.add_player(player)
-            game.ante_initial_roles = distribution.copy()
             game.initial_roles = distribution.copy()
             game.current_roles = distribution.copy()
 
@@ -292,17 +291,12 @@ async def test_victory(distribution):
                     game.dead = [dead]
                 else:
                     game.dead = []
-                if doppel and doppel != 'doppelgänger':
-                    game.doppelganger_choice = distribution[doppel]
 
                 with open(MOCK_IRC_FILE, 'a') as fd:
                     fd.write("distribution:{}\n".format(
                         str(game.current_roles)
                     ))
                     fd.write("dead:{}\n".format(game.dead))
-                    fd.write("doppelganger choice:{}\n".format(
-                        game.doppelganger_choice
-                    ))
                     fd.write("victory:{}\n".format(str(await game.victory())))
 
 

@@ -45,11 +45,8 @@ class Game:
 
     def __init__(self):
         self.roles = []
-        self.ante_initial_roles = {}  # before doppelganger
         self.initial_roles = {}  # after doppelganger
         self.current_roles = {}
-        self.doppelganger_choice = ""
-        self.doppelganger = ""
         self.votes = {}
         self.dead = []
         self.tasks = []  # tasks launched
@@ -140,7 +137,6 @@ class Game:
         for player in self.players[3:]:
             msg = "Tu es {}".format(roles[player])
             self._fire_and_forget(notify_player(player, msg, self.bot))
-
 
     async def loup_garou_turn(self, active_players=None):
         """Execute loup garou's turn.
@@ -267,7 +263,6 @@ class Game:
         self._fire_and_forget(notify_player(voleur, msg, self.bot))
         return (voleur, choice)
 
-
     async def soulard_turn(self, soulard=None):
         """Execute the soulard's turn.
 
@@ -283,19 +278,12 @@ class Game:
         choice = await get_choice(soulard, ("0", "1", "2"), self.bot)
         return (soulard, choice)
 
-    async def insomniaque_turn(self, doppel=False):
+    async def insomniaque_turn(self):
         """Execute insomniaque's turn.
 
         Must be executed after all switches are done.
-
-        Args:
-            doppel (bool): if true, indicate this is the turn of the
-        doppelgänger.
         """
-        if doppel:
-            player = self._get_player_nick(["doppelgänger"])
-        else:
-            player = self._get_player_nick(["insomniaque"])
+        player = self._get_player_nick(["insomniaque"])
         if not player:
             return
         msg = "Ton rôle est à présent {}.".format(self.current_roles[player])
@@ -334,10 +322,7 @@ class Game:
             else:
                 return ("le village", villageois)
 
-        if (
-            self.current_roles[self.dead[0]] == "doppelgänger"
-            and self.doppelganger_choice == "chasseur"
-        ) or self.current_roles[self.dead[0]] == "chasseur":
+        if self.current_roles[self.dead[0]] == "chasseur":
             if not self.votes.get(self.dead[0]):
                 msg = (
                     "Chasseur, tu es mort et tu n'as voté contre"
@@ -674,39 +659,6 @@ def deal_anarc(nb_role, max_role_nb=MAX_ROLE_NB, mandatory=MANDATORY_ROLES):
 @Game.add_role('chasseur')
 async def chasseur(game, phase="night", synchro=0):
     pass
-
-
-@Game.add_role("doppelgänger")
-async def doppelganger(game, phase="night", synchro=0):
-    """Execute the doppelgänger's turn."""
-    player = game._get_player_nick("doppelgänger")
-    if not player:
-        return
-    if synchro == 0:
-        choices = [adv for adv in game.players[3:] if adv != player]
-        msg = "Choisis qui tu vas imiter cette nuit."
-        await notify_player(player, msg, game.bot)
-        choice = await get_choice(player, choices, game.bot)
-        new_role = game.doppelganger_choice = game.initial_roles[choice]
-        msg = "Tu es maintenant {}".format(new_role)
-        game._fire_and_forget(notify_player(player, msg, game.bot))
-        return
-
-    if new_role == "sbire":
-        asyncio.ensure_future(game.sbire_turn(player))
-        return
-    elif new_role in ("loup garou", "franc macon"):
-        game.initial_roles[player] = game.initial_roles[choice]
-        return
-    elif new_role == "voyante":
-        game._fire_and_forget(game.voyante_turn(player))
-        return
-    elif new_role == "voleur":
-        return await game.voleur_turn(player)
-    elif new_role == "noiseuse":
-        return await game.noiseuse_turn(player)
-    elif new_role == "soulard":
-        return await game.soulard_turn(player)
 
 
 @Game.add_role('franc maçon')
