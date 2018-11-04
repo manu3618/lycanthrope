@@ -61,7 +61,9 @@ class Game:
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
-        self.available_roles = get_roles("roles.yaml").get("characters")
+        self.available_roles = get_roles("roles-scenario.yaml").get(
+            "characters"
+        )
 
     @classmethod
     def add_role(cls, role):
@@ -70,6 +72,7 @@ class Game:
         Args:
             role: name of the role.
         """
+
         def decorator(func):
             cls._role_callbacks[role] = func
 
@@ -81,7 +84,9 @@ class Game:
                     synchro (int): nb of synchronisation point for the phase.
                 """
                 return func(*args, **kwargs)
+
             return wrapper
+
         return decorator
 
     def add_player(self, nick):
@@ -231,9 +236,11 @@ class Game:
             self.tasks = []
 
         # order roles:
-        roles = [{name: descr}
-                 for name, descr in self.available_roles.items()
-                 if name in self.dealt_roles]
+        roles = [
+            {name: descr}
+            for name, descr in self.available_roles.items()
+            if name in self.dealt_roles
+        ]
         roles.sort(key=lambda x: str(x.get("order", "100")))
 
         # execute roles with synchro points
@@ -245,7 +252,7 @@ class Game:
 
             self._fire_and_forget(
                 self._role_callbacks[list(role)[0]](
-                    self, phase='night', synchro=role.get("synchro")
+                    self, phase="night", synchro=role.get("synchro")
                 )
             )
 
@@ -502,12 +509,12 @@ def deal_anarc(nb_role, max_role_nb=MAX_ROLE_NB, mandatory=MANDATORY_ROLES):
     return selected_roles
 
 
-@Game.add_role('chasseur')
+@Game.add_role("chasseur")
 async def chasseur(game, phase="night", synchro=0):
     pass
 
 
-@Game.add_role('franc maçon')
+@Game.add_role("franc maçon")
 async def franc_macon(game, phase="night", synchro=0):
     """Execute franc macon's turn.
 
@@ -525,9 +532,9 @@ async def franc_macon(game, phase="night", synchro=0):
         game._fire_and_forget(notify_player(frama, msg, game.bot))
 
 
-@Game.add_role('insomniaque')
+@Game.add_role("insomniaque")
 async def insomniaque(game, phase="night", synchro=0):
-    if phase == 'day':
+    if phase == "day":
         player = next(
             pl for pl, ro in game.initial_role.values() if ro == "insomiaque"
         )
@@ -535,11 +542,14 @@ async def insomniaque(game, phase="night", synchro=0):
         await notify_player(player, msg)
 
 
-@Game.add_role('loup garou')
+@Game.add_role("loup garou")
 async def loup_garou(game, phase="night", synchro=0):
-    loups = list(chain(game._get_player_nick(role) for role in [
-        "loup alpha", "loup garou", "loup shaman"
-    ]))
+    loups = list(
+        chain(
+            game._get_player_nick(role)
+            for role in ["loup alpha", "loup garou", "loup shaman"]
+        )
+    )
     loup_reveur = game._get_player_nick("loup rêveur")
 
     if not loups:
@@ -569,7 +579,7 @@ async def loup_garou(game, phase="night", synchro=0):
             game._fire_and_forget(notify_player(player, msg, game.bot))
 
 
-@Game.add_role('noiseuse')
+@Game.add_role("noiseuse")
 async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     """Execute the noiseuse's turn.
 
@@ -604,24 +614,32 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     game.role_swaps.append((first, second))
 
 
-@Game.add_role('sbire')
+@Game.add_role("sbire")
 async def sbire(game, phase="night", synchro=0):
     """Execute sbire's turn.
 
     This turn is independant of other turns.
     """
-    loups = list(chain(game._get_player_nick(role) for role in [
-        "loup alpha", "loup garou", "loup shaman", "loup rêveur"
-    ]))
+    loups = list(
+        chain(
+            game._get_player_nick(role)
+            for role in [
+                "loup alpha",
+                "loup garou",
+                "loup shaman",
+                "loup rêveur",
+            ]
+        )
+    )
     sbire = game._get_player_nick("sbire")
     if sbire and loups:
         msg = "Il y a {} loup garou ({}).".format(
-            len(loups), ', '.format(loups)
+            len(loups), ", ".format(loups)
         )
         game._fire_and_forget(notify_player(sbire, msg, game.bot))
 
 
-@Game.add_role('soulard')
+@Game.add_role("soulard")
 async def soulard(game, phase="night", synchro=0):
     """Execute the soulard's turn."""
     soulard = game._get_player_nick(["soulard"])
@@ -634,17 +652,17 @@ async def soulard(game, phase="night", synchro=0):
     game.role_swaps.append((soulard, choice))
 
 
-@Game.add_role('tanneur')
+@Game.add_role("tanneur")
 async def tanneur(game, phase="night", synchro=0):
     pass
 
 
-@Game.add_role('villageois')
+@Game.add_role("villageois")
 async def villageois(game, phase="night", synchro=0):
     pass
 
 
-@Game.add_role('voleur')
+@Game.add_role("voleur")
 async def voleur(game, phase="night", synchro=0):
     """Execute the voleur's turn."""
     voleur = game._get_player_nick(["voleur"])
@@ -662,7 +680,7 @@ async def voleur(game, phase="night", synchro=0):
     return game.role_swaps.append((voleur, choice))
 
 
-@Game.add_role('voyante')
+@Game.add_role("voyante")
 async def voyante(game, phase="night", synchro=0):
     """Execute the voyante's turn.
 
@@ -679,9 +697,7 @@ async def voyante(game, phase="night", synchro=0):
     )
     await notify_player(voyante, msg, game.bot)
     choice = await get_choice(voyante, game.players, game.bot)
-    msg = "Le role de {} est {}.".format(
-        choice, game.initial_roles[choice]
-    )
+    msg = "Le role de {} est {}.".format(choice, game.initial_roles[choice])
     await notify_player(voyante, msg, game.bot)
 
     if choice in ("0", "1", "2"):
