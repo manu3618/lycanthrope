@@ -57,7 +57,7 @@ scenario:
             artefact: false
             token: false
             mandatory: [loup garou, voyante]
-            max:
+            max_nb:
                 chasseur: 1
                 doppelgänger: 1
                 franc maçon: 2
@@ -74,7 +74,7 @@ scenario:
             description:
             artefact: false
             token: false
-            ordered roles: [loup garou, loup shaman, voyante, voleur, gremlin,
+            roles: [loup garou, loup shaman, voyante, voleur, gremlin,
                             villageois, vollageois, chose]
     vampires contre village:
     batailles épiques:

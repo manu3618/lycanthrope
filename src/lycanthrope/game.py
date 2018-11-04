@@ -1,5 +1,6 @@
 import asyncio
 from collections import Counter
+from functools import partial
 from itertools import chain
 from os.path import dirname, join, realpath
 from random import shuffle
@@ -58,12 +59,12 @@ class Game:
         self.role_swaps = []  # list of tuple of exchanged roles.
         self.dealer["Anarchie"] = deal_anarc
         self.dealer["Classique"] = deal_anarc
+        self.scenario = "Classique"
+        self.scenario_dict = {}
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
-        self.available_roles = get_roles("roles-scenario.yaml").get(
-            "characters"
-        )
+        self.available_roles = get_roles("roles-scenario.yaml")
 
     @classmethod
     def add_role(cls, role):
@@ -88,6 +89,48 @@ class Game:
             return wrapper
 
         return decorator
+
+    def add_scenarii(self, filename="roles-scenario.yaml"):
+        """Fill self.dealer with available scenario
+
+        Args:
+            filename (str) yaml containing scenario
+        """
+        scenario_list = get_scenario(filename)
+        for scenario in scenario_list.values():
+            for name, params in scenario.items():
+                self.scenario_dict[name] = params
+                self.dealer[name] = get_dealer(params)
+
+    def set_scenario(self, scenario="Classique"):
+        """Change actif scenario.
+        """
+        if scenario not in self.dealer:
+            raise ValueError(
+                "'{}' not in available scenario ({})".format(
+                    scenario, ", ".join(self.dealer.keys())
+                )
+            )
+        self.scenario = scenario
+
+    def set_random_scenario(self):
+        """Randomly choose the scenario."""
+        available_scenario = list(self.dealer.keys())
+        shuffle(available_scenario)
+        for scenario in available_scenario:
+            self.scenario = scenario
+            try:
+                self.deal_roles()
+                break
+            except ValueError:
+                pass
+
+        self.notify_player(
+            None, "Le scenario choisi aléatoirement est {}".format(scenario)
+        )
+        self.notify_player(
+            None, "{}".format(self.scenario_list[scenario].get("description"))
+        )
 
     def add_player(self, nick):
         """Add the player <nick> to the game.
@@ -117,11 +160,11 @@ class Game:
         elif nick in self.players:
             self.players.remove(nick)
 
-    def deal_roles(self, scenario="Classique"):
+    def deal_roles(self):
         """Maps each player to a role."""
         nb_player = len(self.players)
         nb_role = nb_player + 3
-        selected_roles = self.dealer[scenario](nb_role)
+        selected_roles = self.dealer[self.scenario](nb_role)
         shuffle(selected_roles)
 
         self.initial_roles = dict(zip(self.players, selected_roles))
@@ -509,6 +552,73 @@ def deal_anarc(nb_role, max_role_nb=MAX_ROLE_NB, mandatory=MANDATORY_ROLES):
     return selected_roles
 
 
+def get_dealer(*args, **kwargs):
+    """Return dealer function.
+
+    Args:
+        artefact (bool): use artefact
+        token (bool): use token
+        madatory (list): list of mandatory roles
+        max_nb (dict): {available_role: number of players with this role}
+        roles (list): roles to deal, truncable
+        min_player (int): minimum number of players
+        max_player (int): maximum number of players
+
+    Return:
+        function: dealer function
+    """
+    mandatory = kwargs.get("mandatory", ["loup garou", "voyante"])
+    max_nb = kwargs.get("max_nb", {})
+    roles = kwargs.get("roles", [])
+    max_players = kwargs.get("max_players", 10)
+    min_players = kwargs.get("min_players", 3)
+
+    def dealer_func(
+        nb_players, min_players, max_players, roles, max_nb, mandatory
+    ):
+        """Select roles
+
+        Args:
+            nb_player (int): number of roles to deal
+
+        Returns:
+            (list): selected roles in random  order.
+        """
+        if nb_players < min_players or nb_players > max_players:
+            raise ValueError(
+                "Player number must be between {} and {}".format(
+                    min_players, max_players
+                )
+            )
+        if roles:
+            # roles explicitly given
+            shuffle(roles)
+            return roles[: 3 + nb_players]
+
+        # possible roles
+        role = []
+        for name, nb in max_nb.items():
+            role.extend([name] * nb)
+        role = role[: 3 + nb_players]
+        shuffle(role)
+
+        # mandatory roles
+        for i, name in enumerate(mandatory):
+            if name not in role:
+                role[i] = name
+        shuffle(role)
+        return role
+
+    return partial(
+        dealer_func,
+        min_players=min_players,
+        max_players=max_players,
+        roles=roles,
+        max_nb=max_nb,
+        mandatory=mandatory,
+    )
+
+
 @Game.add_role("chasseur")
 async def chasseur(game, phase="night", synchro=0):
     pass
@@ -709,6 +819,10 @@ async def voyante(game, phase="night", synchro=0):
         game._fire_and_forget(notify_player(voyante, msg, game.bot))
 
 
-def get_roles(filename):
+def get_param(filename, param):
     with open(join(dirname(realpath(__file__)), filename)) as fp:
-        return yaml.load(fp.read())
+        return yaml.load(fp.read()).get(param)
+
+
+get_roles = partial(get_param, param="characters")
+get_scenario = partial(get_param, param="scenario")
