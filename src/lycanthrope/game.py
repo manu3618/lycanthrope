@@ -9,24 +9,6 @@ import yaml
 
 from .irc import get_choice, notify_player
 
-# max number of player with the role
-MAX_ROLE_NB = {
-    "tanneur": 1,
-    "chasseur": 1,
-    "doppelgänger": 1,
-    "loup garou": 2,
-    "sbire": 1,
-    "franc maçon": 2,
-    "voyante": 1,
-    "voleur": 1,
-    "noiseuse": 1,
-    "soulard": 1,
-    "insomniaque": 1,
-    "villageois": 3,
-}
-
-MANDATORY_ROLES = {"voyante", "loup garou"}
-
 
 class Game:
     """Game
@@ -57,10 +39,10 @@ class Game:
         self.in_progress = False
         self.dealer = {}
         self.role_swaps = []  # list of tuple of exchanged roles.
-        self.dealer["Anarchie"] = deal_anarc
-        self.dealer["Classique"] = deal_anarc
-        self.scenario = "Classique"
         self.scenario_dict = {}
+        self.overall_max_nb = {}
+        self.add_scenarii()
+        self.set_scenario()
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
@@ -97,10 +79,25 @@ class Game:
             filename (str) yaml containing scenario
         """
         scenario_list = get_scenario(filename)
+        second_pass = []
         for scenario in scenario_list.values():
+            if scenario is None:
+                continue
             for name, params in scenario.items():
+                if params is None:
+                    second_pass.append(name)
+                    continue
                 self.scenario_dict[name] = params
-                self.dealer[name] = get_dealer(params)
+                self.dealer[name] = get_dealer(**params)
+
+        # update overall_max_nb
+        self.overall_max_nb = total_max_role_nb(
+            [scenar for _, scenar in self.scenario_dict.items()]
+        )
+        for name in second_pass:
+            params = {"all_roles": self.overall_max_nb}
+            self.scenario_dict[name] = params
+            self.dealer[name] = get_dealer(**params)
 
     def set_scenario(self, scenario="Classique"):
         """Change actif scenario.
@@ -112,6 +109,12 @@ class Game:
                 )
             )
         self.scenario = scenario
+        if "roles" in self.scenario_dict[scenario]:
+            self.max_role_nb = Counter(self.scenario_dict[scenario]["roles"])
+        elif "max_nb" in self.scenario_dict[scenario]:
+            self.max_role_nb = self.scenario_dict[scenario].get("max_nb", {})
+        else:
+            self.max_role_nb = self.overall_max_nb
 
     def set_random_scenario(self):
         """Randomly choose the scenario."""
@@ -140,7 +143,7 @@ class Game:
         Args:
             nick (string): nick of the player
         """
-        if len(self.players) >= sum(MAX_ROLE_NB.values()):
+        if len(self.players) >= sum(self.max_role_nb.values()):
             raise RuntimeWarning("Maximum number of players reached")
         elif nick not in self.players:
             self.players.append(nick)
@@ -162,9 +165,8 @@ class Game:
 
     def deal_roles(self):
         """Maps each player to a role."""
-        nb_player = len(self.players)
-        nb_role = nb_player + 3
-        selected_roles = self.dealer[self.scenario](nb_role)
+        roles = len(self.players)
+        selected_roles = self.dealer[self.scenario](roles)
         shuffle(selected_roles)
 
         self.initial_roles = dict(zip(self.players, selected_roles))
@@ -532,26 +534,6 @@ class Game:
         self.tasks.append(tsk)
 
 
-def deal_anarc(nb_role, max_role_nb=MAX_ROLE_NB, mandatory=MANDATORY_ROLES):
-    """Deal role for the "Anarchie" scenario.
-
-    Args:
-        nb_role (int): number or role to deal.
-        max_role_nb (dict): maximum number of characters per roles.
-        mandatory (iterable): role that must be dealt.
-    """
-    roles = [role for role, nb in max_role_nb.items() for _ in range(nb)]
-    shuffle(roles)
-    selected_roles = roles[:nb_role]
-
-    # deal manadatory roles if needed
-    for i, role in enumerate(mandatory):
-        if role not in selected_roles:
-            selected_roles[i] = role
-
-    return selected_roles
-
-
 def get_dealer(*args, **kwargs):
     """Return dealer function.
 
@@ -572,19 +554,22 @@ def get_dealer(*args, **kwargs):
     roles = kwargs.get("roles", [])
     max_players = kwargs.get("max_players", 10)
     min_players = kwargs.get("min_players", 3)
+    all_roles = kwargs.get("all_roles", {})
 
     def dealer_func(
-        nb_players, min_players, max_players, roles, max_nb, mandatory
+        nb_roles, min_players, max_players, roles, max_nb, mandatory, all_roles
     ):
         """Select roles
 
         Args:
-            nb_player (int): number of roles to deal
+            nb_roles (int): number of roles to deal
 
         Returns:
             (list): selected roles in random  order.
         """
-        if nb_players < min_players or nb_players > max_players:
+        print()
+        from pprint import pprint; pprint(locals())
+        if nb_roles < min_players + 3 or nb_roles > max_players + 3:
             raise ValueError(
                 "Player number must be between {} and {}".format(
                     min_players, max_players
@@ -593,13 +578,17 @@ def get_dealer(*args, **kwargs):
         if roles:
             # roles explicitly given
             shuffle(roles)
-            return roles[: 3 + nb_players]
+            return roles[: 3 + nb_roles]
+
+        if not max_nb:
+            # anarchie: all roles are available
+            max_nb = all_roles
 
         # possible roles
         role = []
         for name, nb in max_nb.items():
             role.extend([name] * nb)
-        role = role[: 3 + nb_players]
+        role = role[: 3 + nb_roles]
         shuffle(role)
 
         # mandatory roles
@@ -616,6 +605,7 @@ def get_dealer(*args, **kwargs):
         roles=roles,
         max_nb=max_nb,
         mandatory=mandatory,
+        all_roles=all_roles,
     )
 
 
@@ -826,3 +816,34 @@ def get_param(filename, param):
 
 get_roles = partial(get_param, param="characters")
 get_scenario = partial(get_param, param="scenario")
+
+
+def max_dict(dicts):
+    """Merge dicts whose values are int.
+
+    if key is present in multiple dict, choose the max.
+
+    Args:
+        dicts (list): list of dicts to merge
+
+    Retrun:
+        (dict) merged dict
+    """
+    ret = {}
+    for cur_dict in dicts:
+        for key, value in cur_dict.items():
+            ret[key] = max(d.get(key, 0) for d in dicts)
+    return ret
+
+
+def total_max_role_nb(scenario):
+    """Return all roles and its max  number ofoccurence for any scenario.
+
+    Arg:
+        scenario (list): list of scenario
+    """
+    perso_counts = [s["max_nb"] for s in scenario if s and "max_nb" in s]
+    perso_counts.extend(
+        [Counter(s["roles"]) for s in scenario if s and "roles" in s]
+    )
+    return max_dict(perso_counts)

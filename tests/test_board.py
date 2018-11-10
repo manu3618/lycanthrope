@@ -1,7 +1,8 @@
 import asyncio
 import tempfile
 from collections import Counter
-from itertools import product, combinations
+from itertools import combinations, product
+from os.path import dirname, join, realpath
 from random import choice, randint
 
 import faker
@@ -9,10 +10,16 @@ import pytest
 
 import lycanthrope
 import mock
-from lycanthrope.game import MAX_ROLE_NB
+from lycanthrope.game import get_scenario
 
 # Persistent file for IRC-base interactions
 MOCK_IRC_FILE = tempfile.NamedTemporaryFile(prefix="lycanthrope-").name
+CONFIG_FILE = join(
+    dirname(realpath(__file__)), "../src/lycanthrope/roles-scenario.yaml"
+)
+MAX_ROLE_NB = get_scenario(CONFIG_FILE)["loups-garous contre village"][
+    "Classique"
+]["max_nb"]
 
 
 def test_init():
@@ -137,7 +144,10 @@ def test_unknown_scenario(game):
         game.set_scenario("unknown")
 
 
-SCENARIO = {"Anarchie": {}, "Classique": {}}
+SCENARIO = {
+    "Anarchie": {"min_players": 3, "max_player": 10},
+    "Classique": {"min_players": 3, "max_player": 10},
+}
 
 
 @pytest.mark.parametrize("scenario,constraints", tuple(SCENARIO.items()))
