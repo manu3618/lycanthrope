@@ -39,6 +39,17 @@ class Game:
         self.in_progress = False
         self.dealer = {}
         self.role_swaps = []  # list of tuple of exchanged roles.
+        self.tokens = {
+            "assassin": "assassin",
+            "chauve-souris": "chauve-souris",
+            "peur": "peur",
+            "peste": "peste",
+            "clarté 0": "clarté",
+            "clarté 1": "clarté",
+            "vampire": "vampire",
+            "traitre": "traitre",
+            "amour": "amour",
+        }
         self.scenario_dict = {}
         self.overall_max_nb = {}
         self.add_scenarii()
@@ -147,6 +158,7 @@ class Game:
             raise RuntimeWarning("Maximum number of players reached")
         elif nick not in self.players:
             self.players.append(nick)
+            self.tokens[nick] = "clarté"
         else:
             raise ValueError("Player's nickname already used.")
 
@@ -271,6 +283,32 @@ class Game:
         for p, v in zip(player, finished):
             self.vote[p] = v.result()
 
+    async def dawn(self):
+        """Perform down steps.
+
+        Assume roles are dealt.
+        """
+        await self.clean_up()
+
+        # order roles:
+        roles = [
+            {name: descr}
+            for name, descr in self.available_roles.items()
+            if name in self.dealt_roles
+        ]
+        self.token_swaps = []  # tuples (order, token0, token1)
+
+        # execute roles with synchro points
+        for role in roles:
+            self._fire_and_forget(
+                self._role_callbacks[list(role)[0]](self, phase="dawn")
+            )
+        await self.clean_up()
+
+        self.token_swaps.sort(key=lambda x: str(x[0]))
+        for _, s0, s1 in self.token_swaps:
+            self.tokens[s0], self.tokens[s1] = self.tokens[s1], self.tokens[s0]
+
     async def night(self):
         """Perform nigth steps.
 
@@ -336,6 +374,14 @@ class Game:
         self.in_progress = True
         self.deal_roles()
         await self.notify_player_roles()
+
+        msg = (
+            "Arrive le crépuscule. Pour certains joueurs, c'est une période "
+            "d'activité."
+        )
+        await notify_player(None, msg, self.bot)
+
+        await self.dawn()
 
         msg = (
             "La nuit tombe sur le village. "
@@ -501,7 +547,7 @@ class Game:
         return await get_choice(player, choices, self.bot)
 
     def _get_player_nick(self, roles, initial=True):
-        """Return the nick of the playerhaving the role.
+        """Return the nick of the player having the role.
 
         Args:
             roles (list, tuple): list of role to search for
@@ -567,8 +613,6 @@ def get_dealer(*args, **kwargs):
         Returns:
             (list): selected roles in random  order.
         """
-        print()
-        from pprint import pprint; pprint(locals())
         if nb_roles < min_players + 3 or nb_roles > max_players + 3:
             raise ValueError(
                 "Player number must be between {} and {}".format(
@@ -609,6 +653,20 @@ def get_dealer(*args, **kwargs):
     )
 
 
+@Game.add_role("assassin")
+async def assassin(game, phase, synchro="-1"):
+    if phase != "dawn":
+        return
+    msg = "Avec qui vas-tu échanger la marque de l'assassin ?"
+    assa = game._get_player_nick(["assassin"])
+    if not assa:
+        return
+
+    await notify_player(assa, msg, game.bot)
+    choice = await get_choice(assa, game.players[3:], game.bot)
+    game.token_swaps.append((synchro, "assassin",  choice))
+
+
 @Game.add_role("chasseur")
 async def chasseur(game, phase="night", synchro=0):
     pass
@@ -620,6 +678,8 @@ async def franc_macon(game, phase="night", synchro=0):
 
     This turn is independant of the other turns.
     """
+    if phase != "night":
+        return
     frama = game._get_player_nick(["franc maçon"])
     if not frama:
         return
@@ -644,6 +704,8 @@ async def insomniaque(game, phase="night", synchro=0):
 
 @Game.add_role("loup garou")
 async def loup_garou(game, phase="night", synchro=0):
+    if phase != "night":
+        return
     loups = list(
         chain(
             game._get_player_nick(role)
@@ -689,8 +751,9 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     Return:
         tuple: the 2 roles to switch.
     """
-    if noiseuse is None:
-        noiseuse = game._get_player_nick(["noiseuse"])
+    if phase != "night":
+        return
+    noiseuse = game._get_player_nick(["noiseuse"])
     if not noiseuse:
         return
 
@@ -720,6 +783,8 @@ async def sbire(game, phase="night", synchro=0):
 
     This turn is independant of other turns.
     """
+    if phase != "night":
+        return
     loups = list(
         chain(
             game._get_player_nick(role)
@@ -742,6 +807,8 @@ async def sbire(game, phase="night", synchro=0):
 @Game.add_role("soulard")
 async def soulard(game, phase="night", synchro=0):
     """Execute the soulard's turn."""
+    if phase != "night":
+        return
     soulard = game._get_player_nick(["soulard"])
     if not soulard:
         return
@@ -765,6 +832,8 @@ async def villageois(game, phase="night", synchro=0):
 @Game.add_role("voleur")
 async def voleur(game, phase="night", synchro=0):
     """Execute the voleur's turn."""
+    if phase != "night":
+        return
     voleur = game._get_player_nick(["voleur"])
     if not voleur:
         return
@@ -786,6 +855,8 @@ async def voyante(game, phase="night", synchro=0):
 
     This turn is independant of the other turns.
     """
+    if phase != "night":
+        return
     voyante = game._get_player_nick(["voyante"])
     if not voyante:
         return

@@ -366,3 +366,27 @@ async def test_game(players, run):
             # perform several games
             for _ in range(run):
                 await game.game(timeout=1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("players", iter_name_lists())
+async def test_assassin(players):
+    """Tes assassin."""
+    with open(MOCK_IRC_FILE, "a") as fd:
+        fd.write("\n===== TEST assassin and dawn =====\n")
+
+    with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
+        with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
+
+            # init game
+            game = lycanthrope.Game()
+            for player in players:
+                game.add_player(player)
+            game.deal_roles()
+            assa = game.players[-1]
+            game.initial_roles[assa] = "assassin"
+            game.current_roles = game.initial_roles.copy()
+            game.dealt_roles = set(game.current_roles.values())
+
+            await game.dawn()
+            await mock_notify_player(None, str(game.tokens), game.bot)

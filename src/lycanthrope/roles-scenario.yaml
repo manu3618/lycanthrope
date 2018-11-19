@@ -1,4 +1,12 @@
 characters:
+    assassin:
+        description: >
+            L'assassin n'appartient ni au village, ni à la meute de
+            loup-garous, ni au clan des vampires. Il échange la marque du
+            joueur de son coix contre la marque assassin. Il gagne la partie si
+            le joueur avec la marque assassin meurt. L'assassin lui-même n'a
+            pas besoin d'être encore en vie pour gagner.
+        order: -1
     chasseur:
         description: >
             Lorsque le chasseur meurt,
