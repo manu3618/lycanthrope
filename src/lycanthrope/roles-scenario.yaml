@@ -7,6 +7,7 @@ characters:
             le joueur avec la marque assassin meurt. L'assassin lui-même n'a
             pas besoin d'être encore en vie pour gagner.
         order: -1
+        group: assassin
     chasseur:
         description: >
             Lorsque le chasseur meurt,
@@ -46,6 +47,7 @@ characters:
     tanneur:
         description: Le but du tanneur est de mourir.
         order: 9
+        group: tanneur
     voleur:
         description: >
             Échange sa carte avec n'importe quel autre joueur

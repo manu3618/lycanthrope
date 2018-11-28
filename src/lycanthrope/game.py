@@ -1,5 +1,5 @@
 import asyncio
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import partial
 from itertools import chain
 from os.path import dirname, join, realpath
@@ -91,13 +91,14 @@ class Game:
         """
         scenario_list = get_scenario(filename)
         second_pass = []
-        for scenario in scenario_list.values():
+        for family, scenario in scenario_list.items():
             if scenario is None:
                 continue
             for name, params in scenario.items():
                 if params is None:
-                    second_pass.append(name)
+                    second_pass.append((family, name))
                     continue
+                params["family"] = family
                 self.scenario_dict[name] = params
                 self.dealer[name] = get_dealer(**params)
 
@@ -105,8 +106,8 @@ class Game:
         self.overall_max_nb = total_max_role_nb(
             [scenar for _, scenar in self.scenario_dict.items()]
         )
-        for name in second_pass:
-            params = {"all_roles": self.overall_max_nb}
+        for family, name in second_pass:
+            params = {"all_roles": self.overall_max_nb, "family": family}
             self.scenario_dict[name] = params
             self.dealer[name] = get_dealer(**params)
 
