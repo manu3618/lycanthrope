@@ -665,7 +665,7 @@ async def assassin(game, phase, synchro="-1"):
 
     await notify_player(assa, msg, game.bot)
     choice = await get_choice(assa, game.players[3:], game.bot)
-    game.token_swaps.append((synchro, "assassin",  choice))
+    game.token_swaps.append((synchro, "assassin", choice))
 
 
 @Game.add_role("chasseur")
@@ -919,3 +919,70 @@ def total_max_role_nb(scenario):
         [Counter(s["roles"]) for s in scenario if s and "roles" in s]
     )
     return max_dict(perso_counts)
+
+
+def victory_tree(filename="victory.yaml"):
+    with open(join(dirname(realpath(__file__)), filename)) as fp:
+        return yaml.load(fp.read())
+
+
+VICT = victory_tree()
+
+
+async def chasseur():
+    await asyncio.sleep(0)
+    pass
+
+
+async def amoureux():
+    await asyncio.sleep(0)
+    pass
+
+
+ACTION = {"chasseur": chasseur, "amoureux": amoureux}
+
+
+async def victory_walker(
+    dead=None,
+    groups=None,
+    winners=None,
+    state_name="start",
+    vic_tree=VICT,
+    is_epique=False,
+    action_func=ACTION,
+):
+    if dead is None:
+        dead = set()
+    if groups is None:
+        groups = defaultdict(set)
+    if winners is None:
+        winners = set()
+
+    state = vic_tree[state_name]
+    if isinstance(state.get("dead"), bool):
+        next_step = state[dead].get(len(dead) != 0)
+    if isinstance(state.get("dead", dict)):
+        check = next(state["dead"].keys())
+        next_step = state["dead"]["check"][check in dead]
+    if "exist" in state:
+        group = state["exist"]
+        next_step = len(groups[group] != 0)
+    if "epique" in state:
+        next_step = state["epique"][is_epique]
+    if "victory" in state:
+        winners.add(state["victory"])
+    if "action" in state:
+        await action_func[state["action"]]
+    if "next" in state:
+        next_step = state["next"]
+    if "token" in state:
+        check = next(state["token"])
+        if check in dead:
+            next_step = state["token"]["dead"]
+        else:
+            next_step = state["token"]["else"]
+
+    if "end" in state:
+        return winners
+    else:
+        victory_walker(dead, groups, winners, next_step, vic_tree, is_epique)

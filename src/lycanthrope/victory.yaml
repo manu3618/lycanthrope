@@ -1,0 +1,119 @@
+start:
+    dead:
+        true: b
+        false: a
+
+a:
+    exist:
+        monstre:
+            true: victory-monstre
+            false: victroy-village
+
+victory-monstre:
+    epique:
+        true: victory-none
+        false: vm1
+
+vm1:
+    victory: monstre
+    end: true
+
+victory-village:
+    victory: village
+    end: true
+
+b:
+    dead:
+        chasseur:
+            true: c
+            false: d
+
+c:
+    action: chasseur
+    next: d
+
+
+d:
+    token:
+        amoureux:
+            dead: e
+            else: f
+
+e:
+    action: amoureux
+    next: b
+
+f:
+    token:
+        assassin:
+            dead: g
+            else: h
+
+g:
+    victory: assassin
+    next: h
+
+h:
+    dead:
+        tanneur:
+            true: 2
+            false: i
+2:
+    classic:
+        dead:
+            monstre:
+                false: victory-tanneur
+                true: victory-tanneur-village
+    epique:
+        victory: tanneur
+        next: 3
+
+victory-tanneur:
+    victory: tanneur
+    end: true
+
+victroy-tanneur-village:
+    victory: tanneur
+    next: victory-village
+
+i:
+    dead:
+        monstre:
+            true: victory-village
+            false: j
+
+j:
+    exist:
+        monstre:
+            true: victory-monstre
+            false: victory-none
+
+victory-none:
+    end: true
+
+3:
+    dead:
+        meute:
+            true: 4
+            false: 5
+4:
+    dead:
+        vampire:
+            true: victory-village
+            false: victory-vampire
+
+victory-vampire:
+    victroy: vampire
+    end: true
+
+5:
+    dead:
+        vampire:
+            true: victory-meute
+            false: victory-none
+
+victory-meute:
+    victroy: meute
+    end: true
+
+
