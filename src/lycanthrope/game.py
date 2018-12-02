@@ -304,7 +304,7 @@ class Game:
 
         finished, _ = await asyncio.wait(tasks)
         for p, v in zip(player, finished):
-            self.vote[p] = v.result()
+            self.votes[p] = v.result()
 
     async def dawn(self):
         """Perform down steps.
@@ -722,10 +722,20 @@ async def assassin(game, phase, synchro="-1"):
 
 @Game.add_role("chasseur")
 async def chasseur(game, phase="night", synchro=0):
-    # TODO
     if phase != "day":
         return
-    await asyncio.sleep(1)
+    chas = game._get_player_nick(["chasseur"])
+    if not chas:
+        return
+    msg = "Chasseur tu es mort."
+    await notify_player(chas, msg, game.bot)
+    if not game.votes.get(chas) or game.votes[chas] in game.dead:
+        msg = "Tu dois immédiatement tuer un joueur non mort."
+        alive = {player for player in game.players if player not in game.dead}
+        dead = await get_choice(chas, alive, game.bot)
+        game.dead.add(dead)
+        msg = "Dans un dernier élan de vie, le chasseur tue " + dead
+        game._fire_and_forget(notify_player(None, msg, game.bot))
 
 
 @Game.add_role("cupidon")
