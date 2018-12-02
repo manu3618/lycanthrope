@@ -32,7 +32,7 @@ class Game:
         self.initial_roles = {}  # after doppelganger
         self.current_roles = {}
         self.votes = {}
-        self.dead = []
+        self.dead = {}
         self.tasks = []  # tasks launched
         self.victories = Counter()
         self.bot = None
@@ -538,7 +538,7 @@ class Game:
                 await notify_player(None, msg, self.bot)
             return
         else:
-            self.dead = [results[0][0]]
+            self.dead = {results[0][0]}
             msg = "Le village a décidé de tuer {}.".format(results[0][0])
 
     async def _vote(self, player, choice=None):
@@ -682,12 +682,12 @@ def get_dealer(*args, **kwargs):
 
 @Game.add_role("amoureux")
 async def amoureux(game, phase, synchro=""):
+    amoureux = {
+        nick
+        for nick, value in game.tokens.items()
+        if value == "amour" and nick in game.players[:3]
+    }
     if phase == "night":
-        amoureux = [
-            nick
-            for nick, value in game.tokens.items()
-            if value == "amour" and nick in game.players[:3]
-        ]
         if amoureux:
             msg = "L{s}amoureu{x} {v} {a}".format(
                 s="es " if len(amoureux) > 1 else "'",
@@ -698,9 +698,12 @@ async def amoureux(game, phase, synchro=""):
             for nick in amoureux:
                 game._fire_and_forget(notify_player(nick, msg, game.bot))
     if phase != "day":
-        # TODO
-        return
-    pass
+        if any(x in game.dead for x in amoureux):
+            game.dead.add(set(amoureux))
+            msg = "Les amoureux {} meurent ensemble.".format(
+                " et ".join(amoureux)
+            )
+            game._fire_and_forget(notify_player(None, msg, game.bot))
 
 
 @Game.add_role("assassin")
