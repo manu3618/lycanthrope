@@ -456,6 +456,33 @@ class Game:
         )
         await notify_player(None, msg, self.bot)
 
+        traitre = [
+            nick
+            for nick, value in self.tokens.values()
+            if value == "traire" and nick in self.players[:3]
+        ]
+
+        if traitre:
+            groups = defaultdict(set)
+            for name, descr in self.available_roles.items():
+                groups[descr.get("group", "villageois")].add(name)
+            traitre_grp = self.available_roles[traitre[0]]["group"]
+            traitre_grp_members = self._get_player_nick(groups[traitre_grp])
+
+            msg = "Il y avait un traire ({})".format(traitre[0])
+            await notify_player(None, msg, self.bot)
+
+            if any(x in self.dead for x in traitre_grp_members):
+                victory[1].add(traitre[0])
+                msg = "Le traitre gagne également."
+            else:
+                msg = "Le traitre ne gagne pas."
+                try:
+                    victory[1].remove(traitre[0])
+                except KeyError:
+                    pass
+            await notify_player(None, msg, self.bot)
+
         if victory[1]:
             for player in victory[1]:
                 self.victories[player] += 1
@@ -736,6 +763,19 @@ async def chasseur(game, phase="night", synchro=0):
         game.dead.add(dead)
         msg = "Dans un dernier élan de vie, le chasseur tue " + dead
         game._fire_and_forget(notify_player(None, msg, game.bot))
+
+
+@Game.add_role("comploteuse")
+async def comploteuse(game, phase="dawn", synchro="-3"):
+    if phase != "dawn":
+        return
+    comp = game._get_player_nick(["comploteuse"])
+    if not comp:
+        return
+    msg = "Contre qui va tu changer la marque du traitre ?"
+    await notify_player(comp, msg, game.bot)
+    choice = await get_choice(comp, game.player[:3], game.bot)
+    game.token_swaps.append((synchro, "traitre", choice))
 
 
 @Game.add_role("cupidon")

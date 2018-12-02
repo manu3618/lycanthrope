@@ -15,6 +15,12 @@ characters:
         order: # default: only awake during day
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
+    comploteuse:
+        description: >
+            Elle échange la marque de n'importe quel joueur contre celle du
+            traitre.
+        order: -3
+        group: villageois
     cupidon:
         description: >
             Il peut rendre 2 joueurs amoureux. Cet amour est simboliséé par les
