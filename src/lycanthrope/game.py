@@ -48,7 +48,8 @@ class Game:
             "clarté 1": "clarté",
             "vampire": "vampire",
             "traitre": "traitre",
-            "amour": "amour",
+            "amour 0": "amour",
+            "amour 1": "amour",
         }
         self.victory_tree = victory_tree()
         self.scenario_dict = {}
@@ -186,6 +187,7 @@ class Game:
         self.initial_roles = dict(zip(self.players, selected_roles))
         self.current_roles = self.initial_roles.copy()
         self.dealt_roles = set(self.current_roles.values())
+        self.tokens.update({player: "clareté" for player in self.players})
 
     async def notify_player_roles(self, initial=True):
         """Inform each player of its initial role.
@@ -205,12 +207,13 @@ class Game:
     async def victory_walker(self, groups, state_name="start", winners=None):
         """
         Args:
+            groups (dict)
+            state_name (str)
+            winners (set)
 
         Return:
-            list: winner groups
+            set: winner groups
         """
-        # XXX
-        print(state_name)
         if winners is None:
             winners = set()
         state = self.victory_tree[state_name]
@@ -273,7 +276,6 @@ class Game:
         Return:
             tuple: (winning side(string), winning players (list of nick))
         """
-        # XXX
         groups = defaultdict(set)
         for name, descr in self.available_roles.items():
             groups[descr.get("group", "villageois")].add(name)
@@ -404,6 +406,13 @@ class Game:
 
         await self.dawn()
 
+        # notify token
+        for nick in self.players[3:]:
+            msg = "Tu possède la marque suivante: {}".format(self.token[nick])
+            self._fire_and_forget(notify_player(nick, msg, self.bot))
+        self._roles_callback["amoureux"](self, phase="night")
+        self.clean_up()
+
         msg = (
             "La nuit tombe sur le village. "
             "Cependant, certains joueurs accomplissent une action "
@@ -435,22 +444,19 @@ class Game:
         await notify_player(None, msg, self.bot)
 
         # repr of winners
-        if victory[1] and isinstance(victory[1], (list, tuple)):
-            winners = ", ".join(victory[1])
-        elif victory[1]:
-            winners = victory[1]
-        else:
-            winners = ""
-
         msg = (
-            "C'est {} qui gagne{}, " "c'est à dire les joueurs suivant: {}."
+            "Le{sg} groupe{sg} gagnant{sg} {v}: {g}, "
+            "c'est à dire le{sj} joueur{sj} suivant{sj}: {j}."
         ).format(
-            victory[0] if victory[0] else "personne",
-            "ent" if "et" in victory[0] else "",
-            winners,
+            sg="s" if victory[0] else "",
+            v="sont" if len(victory[0] > 1) else "est",
+            g=", ".join(victory[0]) if victory[0] else "personne",
+            sj="s" if victory[1] else "",
+            j=", ".join(victory[1]) if victory[1] else "personne",
         )
         await notify_player(None, msg, self.bot)
-        if winners:
+
+        if victory[1]:
             for player in victory[1]:
                 self.victories[player] += 1
         msg = "Voici le nombre de victoires: {}".format(
@@ -676,10 +682,24 @@ def get_dealer(*args, **kwargs):
 
 @Game.add_role("amoureux")
 async def amoureux(game, phase, synchro=""):
-    # TODO
+    if phase == "night":
+        amoureux = [
+            nick
+            for nick, value in game.tokens.items()
+            if value == "amour" and nick in game.players[:3]
+        ]
+        if amoureux:
+            msg = "L{s}amoureu{x} {v} {a}".format(
+                s="es " if len(amoureux) > 1 else "'",
+                x="x" if len(amoureux) > 1 else "",
+                v="sont" if len(amoureux) > 1 else "est",
+                a=", ".join(amoureux),
+            )
+            for nick in amoureux:
+                game._fire_and_forget(notify_player(nick, msg, game.bot))
     if phase != "day":
+        # TODO
         return
-    await asyncio.sleep(1)
     pass
 
 
@@ -703,6 +723,33 @@ async def chasseur(game, phase="night", synchro=0):
     if phase != "day":
         return
     await asyncio.sleep(1)
+
+
+@Game.add_role("cupidon")
+async def cupidon(game, phase="dawn", synchro="-4"):
+    if phase != "dawn":
+        return
+    cup = game._get_player_nick(["cupidon"])
+    if not cup:
+        return
+    msg = "Tu peux rendre amoureux 2 personnes. "
+    await notify_player(cup, msg, game.bot)
+    msg = (
+        'Choisis le 1er amoureux. choisi "aucun" si tu ne veux rendre '
+        "personne amoureux."
+    )
+    await notify_player(cup, msg, game.bot)
+    choice = await get_choice(
+        cup, chain(["aucun"], game.players[:3]), game.bot
+    )
+    if choice == "aucun":
+        return
+    game.token_swaps.append((synchro, "amour 0", choice))
+
+    msg = "Qui sera le deuxième aoureux?"
+    await notify_player(cup, msg, game.bot)
+    choice = await get_choice(cup, game.players[:3], game.bot)
+    game.token_swaps.append((synchro, "amour 1", choice))
 
 
 @Game.add_role("franc maçon")

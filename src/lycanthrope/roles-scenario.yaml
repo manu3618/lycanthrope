@@ -15,6 +15,12 @@ characters:
         order: # default: only awake during day
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
+    cupidon:
+        description: >
+            Il peut rendre 2 joueurs amoureux. Cet amour est simboliséé par les
+            marques d'amour.
+        order: -4
+        group: villageois
     franc maçon:
         description: >
             Villageois comme les autres. Lors de son tour,
