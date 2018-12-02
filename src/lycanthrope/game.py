@@ -50,6 +50,7 @@ class Game:
             "traitre": "traitre",
             "amour": "amour",
         }
+        self.victory_tree = victory_tree()
         self.scenario_dict = {}
         self.overall_max_nb = {}
         self.add_scenarii()
@@ -201,78 +202,97 @@ class Game:
             msg = "Tu es {}".format(roles[player])
             self._fire_and_forget(notify_player(player, msg, self.bot))
 
+    async def victory_walker(self, groups, state_name="start", winners=None):
+        """
+        Args:
+
+        Return:
+            list: winner groups
+        """
+        # XXX
+        print(state_name)
+        if winners is None:
+            winners = set()
+        state = self.victory_tree[state_name]
+
+        for fam in (
+            "bataille épique",
+            "loups-garous-contre village",
+            "vampires contre village",
+        ):
+            if fam in state:
+                scenar_fam = self.scenario_dict[self.scenario].get("family")
+                try:
+                    next_step = state[fam][scenar_fam == fam]
+                    break
+                except KeyError:
+                    pass
+                if scenar_fam == fam:
+                    state = state[fam]
+        else:
+            try:
+                state = state["classic"]
+            except KeyError:
+                pass
+
+        if "has-dead" in state:
+            next_step = state["has-dead"].get(len(self.dead) != 0)
+        if "dead" in state:
+            check = list(state["dead"].keys())[0]
+            checked_player = self._get_player_nick([check])
+            if checked_player:
+                next_step = state["dead"][check][checked_player in self.dead]
+            else:
+                next_step = state["dead"][check][False]
+        if "exist" in state:
+            group = state["exist"]
+            group_name, actions = list(group.items())[0]
+            next_step = actions[len(groups[group_name]) != 0]
+
+        if "victory" in state:
+            winners.add(state["victory"])
+        if "action" in state:
+            await self._role_callbacks[state["action"]](self, phase="day")
+        if "next" in state:
+            next_step = state["next"]
+        if "token" in state:
+            check = list(state["token"].keys())[0]
+            if check in self.dead:
+                next_step = state["token"][check]["dead"]
+            else:
+                next_step = state["token"][check]["else"]
+
+        if "end" in state:
+            return winners
+        else:
+            return await self.victory_walker(groups, next_step, winners)
+
     async def victory(self):
         """Compute victory.
 
         Return:
             tuple: (winning side(string), winning players (list of nick))
         """
-        meute = self._get_player_nick(["loup garou", "sbire"])
-        villageois = self._get_player_nick(
-            [
-                "chasseur",
-                "doppelgänger",
-                "franc macon",
-                "voyante",
-                "voleur",
-                "noiseuse",
-                "soulars",
-                "insomniaque",
-                "villageois",
-            ]
+        # XXX
+        groups = defaultdict(set)
+        for name, descr in self.available_roles.items():
+            groups[descr.get("group", "villageois")].add(name)
+
+        group_member = defaultdict(set)
+        for group_name in groups:
+            members = self._get_player_nick(groups[group_name])
+            group_member[group_name] = members if members else set()
+        group_member["monstres"].update(
+            group_member.get("loups garous", set())
         )
-        if villageois is None:
-            villageois = []
-        elif isinstance(villageois, str):
-            villageois = [villageois]
-        if isinstance(meute, str):
-            meute = [meute]
+        group_member["monstres"].update(group_member.get("vampire", set()))
 
-        if not self.dead:
-            if self._get_player_nick(["loup garou"]):
-                return ("la meute", meute)
-            else:
-                return ("le village", villageois)
+        winners = await self.victory_walker(group_member)
 
-        if self.current_roles[self.dead[0]] == "chasseur":
-            if not self.votes.get(self.dead[0]):
-                msg = (
-                    "Chasseur, tu es mort et tu n'as voté contre"
-                    "personne pendant la nuit. "
-                    "Qui veux-tu emporter avec toi?"
-                )
-                await notify_player(self.dead[0], msg, self.bot)
-                await self._vote(self.dead[0])
-            self.dead.append(self.votes[self.dead[0]])
-
-        if self._get_player_nick(["tanneur"]) in self.dead:
-            if self._get_player_nick("loup garou") and any(
-                player in self.dead
-                for player in self._get_player_nick(["loup garou"])
-            ):
-                return ("le tanneur", self._get_player_nick(["tanneur"]))
-            else:
-                return (
-                    "le tanneur et le village",
-                    villageois + [self._get_player_nick("tanneur")],
-                )
-
-        if self._get_player_nick(["loup garou"]) and any(
-            player in self.dead
-            for player in self._get_player_nick(["loup garou"])
-        ):
-            return ("le village", villageois)
-
-        if "sbire" in self.dead:
-            if self._get_player_nick("loup garou"):
-                return ("la meute", meute)
-            else:
-                return ("le village", villageois)
-
-        if self._get_player_nick("loup garou", "sbire"):
-            return ("la meute", meute)
-        else:
-            return ("personne", None)
+        return (
+            winners,
+            [member for group in winners for member in group_member[group]],
+        )
 
     async def vote(self):
         """Perform vote."""
@@ -654,6 +674,15 @@ def get_dealer(*args, **kwargs):
     )
 
 
+@Game.add_role("amoureux")
+async def amoureux(game, phase, synchro=""):
+    # TODO
+    if phase != "day":
+        return
+    await asyncio.sleep(1)
+    pass
+
+
 @Game.add_role("assassin")
 async def assassin(game, phase, synchro="-1"):
     if phase != "dawn":
@@ -670,7 +699,10 @@ async def assassin(game, phase, synchro="-1"):
 
 @Game.add_role("chasseur")
 async def chasseur(game, phase="night", synchro=0):
-    pass
+    # TODO
+    if phase != "day":
+        return
+    await asyncio.sleep(1)
 
 
 @Game.add_role("franc maçon")
@@ -924,65 +956,3 @@ def total_max_role_nb(scenario):
 def victory_tree(filename="victory.yaml"):
     with open(join(dirname(realpath(__file__)), filename)) as fp:
         return yaml.load(fp.read())
-
-
-VICT = victory_tree()
-
-
-async def chasseur():
-    await asyncio.sleep(0)
-    pass
-
-
-async def amoureux():
-    await asyncio.sleep(0)
-    pass
-
-
-ACTION = {"chasseur": chasseur, "amoureux": amoureux}
-
-
-async def victory_walker(
-    dead=None,
-    groups=None,
-    winners=None,
-    state_name="start",
-    vic_tree=VICT,
-    is_epique=False,
-    action_func=ACTION,
-):
-    if dead is None:
-        dead = set()
-    if groups is None:
-        groups = defaultdict(set)
-    if winners is None:
-        winners = set()
-
-    state = vic_tree[state_name]
-    if isinstance(state.get("dead"), bool):
-        next_step = state[dead].get(len(dead) != 0)
-    if isinstance(state.get("dead", dict)):
-        check = next(state["dead"].keys())
-        next_step = state["dead"]["check"][check in dead]
-    if "exist" in state:
-        group = state["exist"]
-        next_step = len(groups[group] != 0)
-    if "epique" in state:
-        next_step = state["epique"][is_epique]
-    if "victory" in state:
-        winners.add(state["victory"])
-    if "action" in state:
-        await action_func[state["action"]]
-    if "next" in state:
-        next_step = state["next"]
-    if "token" in state:
-        check = next(state["token"])
-        if check in dead:
-            next_step = state["token"]["dead"]
-        else:
-            next_step = state["token"]["else"]
-
-    if "end" in state:
-        return winners
-    else:
-        victory_walker(dead, groups, winners, next_step, vic_tree, is_epique)

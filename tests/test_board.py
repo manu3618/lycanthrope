@@ -6,10 +6,10 @@ from os.path import dirname, join, realpath
 from random import choice, randint
 
 import faker
+import mock
 import pytest
 
 import lycanthrope
-import mock
 from lycanthrope.game import get_scenario
 
 # Persistent file for IRC-base interactions
@@ -311,7 +311,7 @@ def distributions():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("distribution", distributions())
-async def test_victory(distribution):
+async def test_victory_happy_path(distribution):
     """Test victory computing."""
     with open(MOCK_IRC_FILE, "a") as fd:
         fd.write("\n===== TEST victory =====\n")
@@ -390,3 +390,111 @@ async def test_assassin(players):
 
             await game.dawn()
             await mock_notify_player(None, str(game.tokens), game.bot)
+
+
+PLAYERS = [
+    {"id": "empty", "winners": {"villageois"}},
+    {
+        "id": "simple",
+        "dead": {"a"},
+        "roles": {
+            "a": "villageois",
+            "b": "villageois",
+            "c": "loup garou",
+            "d": "loup garou",
+            "e": "vampire",
+            "f": "vampire",
+        },
+        "winners": {
+            "Classique": {"monstres"},
+            "Première nuit": {"monstres"},
+            "Anarchie": set(),
+        },
+    },
+    {
+        "id": "chasseur dead",
+        "dead": {"a"},
+        "roles": {
+            "a": "chasseur",
+            "b": "villageois",
+            "c": "loup garou",
+            "d": "loup garou",
+            "e": "vampire",
+            "f": "vampire",
+        },
+        "winners": {
+            "Classique": {"monstres"},
+            "Première nuit": {"monstres"},
+            "Anarchie": set(),
+        },
+    },
+    {
+        "id": "chasseur alive",
+        "dead": {"b"},
+        "roles": {
+            "a": "chasseur",
+            "b": "villageois",
+            "c": "loup garou",
+            "d": "loup garou",
+            "e": "vampire",
+            "f": "vampire",
+        },
+        "winners": {
+            "Classique": {"monstres"},
+            "Première nuit": {"monstres"},
+            "Anarchie": set(),
+        },
+    },
+    {
+        "id": "tanneur dead",
+        "dead": {"b"},
+        "roles": {
+            "a": "chasseur",
+            "b": "tanneur",
+            "c": "loup garou",
+            "d": "loup garou",
+            "e": "vampire",
+            "f": "vampire",
+        },
+        "winners": {"tanneur"},
+    },
+    {
+        "id": "tanneur alive",
+        "dead": {"f"},
+        "roles": {
+            "a": "chasseur",
+            "b": "tanneur",
+            "c": "loup garou",
+            "d": "loup garou",
+            "e": "vampire",
+            "f": "vampire",
+        },
+        "winners": {
+            "Classique": {"monstres"},
+            "Première nuit": {"monstres"},
+            "Anarchie": set(),
+        },
+    },
+]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("players", PLAYERS)
+@pytest.mark.parametrize(
+    "scenario", ["Classique", "Première nuit", "Anarchie"]
+)
+async def test_victory_walker(game, players, scenario):
+    """Test victory walker.
+
+    """
+    for player in players.get("roles", []):
+        game.add_player(player)
+    game.initial_roles = players.get("roles", {}).copy()
+    game.current_roles = players.get("roles", {}).copy()
+    game.dead = list(players.get("dead", []))
+    game.set_scenario(scenario)
+    results = await game.victory()
+    if isinstance(players["winners"], dict):
+        assert players["winners"][scenario] == results[0]
+    else:
+        assert players["winners"] == results[0]

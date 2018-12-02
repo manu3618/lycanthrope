@@ -1,25 +1,26 @@
 start:
-    dead:
+    has-dead:
         true: b
         false: a
 
 a:
     exist:
-        monstre:
+        monstres:
             true: victory-monstre
-            false: victroy-village
+            false: victory-village
 
 victory-monstre:
-    epique:
-        true: victory-none
-        false: vm1
+    bataille épique:
+        next: victory-none
+    classic:
+        next: vm1
 
 vm1:
-    victory: monstre
+    victory: monstres
     end: true
 
 victory-village:
-    victory: village
+    victory: villageois
     end: true
 
 b:
@@ -61,10 +62,10 @@ h:
 2:
     classic:
         dead:
-            monstre:
+            monstres:
                 false: victory-tanneur
                 true: victory-tanneur-village
-    epique:
+    bataille épique:
         victory: tanneur
         next: 3
 
@@ -78,13 +79,13 @@ victroy-tanneur-village:
 
 i:
     dead:
-        monstre:
+        monstres:
             true: victory-village
             false: j
 
 j:
     exist:
-        monstre:
+        monstres:
             true: victory-monstre
             false: victory-none
 
@@ -115,5 +116,3 @@ victory-vampire:
 victory-meute:
     victroy: meute
     end: true
-
-
