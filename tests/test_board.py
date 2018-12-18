@@ -50,12 +50,12 @@ async def mock_get_choice(player, choices, bot):
 
     Args:
         player (string): unsused
-        choices (list or tuple): availablechoices
+        choices (list or tuple or set): available choices
     Return:
         A random choice
     """
     await asyncio.sleep(randint(0, 10) / 100)
-    cho = choice(choices)
+    cho = choice(list(choices))
     with open(MOCK_IRC_FILE, "a") as fd:
         fd.write("- {} \tchoose \t{} \t({})\n".format(player, cho, choices))
     return cho

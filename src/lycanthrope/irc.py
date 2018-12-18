@@ -47,7 +47,7 @@ async def get_choice(player, choices, bot=None):
 
     Args:
         player (string): nick of the player.
-        choices (list or tuple): available choices.
+        choices (list or tuple or set): available choices.
     """
     msg = "Tu dois choisir parmi les choix suivant: {}".format(", ".join(choices))
     await notify_player(player, msg, bot)
