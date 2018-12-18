@@ -152,7 +152,7 @@ class Game:
     def add_player(self, nick):
         """Add the player <nick> to the game.
 
-        Only works befor the game is started
+        Only works before the game is started
 
         Args:
             nick (string): nick of the player
@@ -380,12 +380,27 @@ class Game:
             delay (int): time to wait before starting the game
             timeout (int): maximal time (in seconds) before closing the votes.
         """
-        if len(self.players) < 6 or len(self.players) > 13:
+        if not self.scenario:
+            self.set_sceario()
+        if len(self.players) < 6:
             msg = (
                 "Le nombre de joueurs n'est pas bon. "
-                "Il doit y avoir entre 3 et 10 joueurs, "
+                "Il doit y avoir au moins 3 joueurs "
                 "et non {}."
             ).format(str(len(self.players) - 3))
+            await notify_player(None, msg, self.bot)
+            return
+        max_nb = 13
+        if "roles" in self.scenario_dict[self.scenario]:
+            max_nb = len(self.scenario_dict[self.scenario]["roles"])
+        if "max_nb" in self.scenario_dict[self.scenario]:
+            max_nb = sum(self.scenario_dict[self.scenario]["max_nb"].values())
+        if len(self.players) > max_nb:
+            msg = (
+                "Le nombre de joueurs n'est pas bon. "
+                "Il doit y avoir au plus {} joueurs pour le scenario {} "
+                "et non {}."
+            ).format(max_nb, self.scenario, str(len(self.players) - 3))
             await notify_player(None, msg, self.bot)
             return
 
@@ -765,6 +780,12 @@ async def chasseur(game, phase="night", synchro=0):
         game._fire_and_forget(notify_player(None, msg, game.bot))
 
 
+@Game.add_role("la chose")
+async def chose(game, phase="night", synchro=0):
+    # XXX
+    pass
+
+
 @Game.add_role("comploteuse")
 async def comploteuse(game, phase="dawn", synchro="-3"):
     if phase != "dawn":
@@ -825,6 +846,12 @@ async def franc_macon(game, phase="night", synchro=0):
         game._fire_and_forget(notify_player(frama, msg, game.bot))
 
 
+@Game.add_role("gremlin")
+async def gremlin(game, phase="night", synchro=0):
+    # XXX
+    pass
+
+
 @Game.add_role("insomniaque")
 async def insomniaque(game, phase="night", synchro=0):
     if phase == "day":
@@ -833,6 +860,12 @@ async def insomniaque(game, phase="night", synchro=0):
         )
         msg = "Ton rôle est à présent {}.".format(game.current_roles[player])
         await notify_player(player, msg)
+
+
+@Game.add_role("loup shaman")
+async def loup_shaman(game, phase="night", synchro=0):
+    # XXX
+    pass
 
 
 @Game.add_role("loup garou")
@@ -956,9 +989,11 @@ async def soulard(game, phase="night", synchro=0):
 async def tanneur(game, phase="night", synchro=0):
     pass
 
+
 @Game.add_role("vampire")
 async def vampire(game, phase="dawn", synchro=0):
     pass
+
 
 @Game.add_role("villageois")
 async def villageois(game, phase="night", synchro=0):
