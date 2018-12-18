@@ -869,7 +869,7 @@ async def loup_garou(game, phase="night", synchro=0):
         game._fire_and_forget(notify_player(loups, msg, game.bot))
 
     if loup_reveur:
-        msg = "Le loup rêveur est ." + loup_reveur
+        msg = "Le loup rêveur est {}.".format(loup_reveur)
         for players in loups:
             game._fire_and_forget(notify_player(player, msg, game.bot))
 
@@ -956,6 +956,9 @@ async def soulard(game, phase="night", synchro=0):
 async def tanneur(game, phase="night", synchro=0):
     pass
 
+@Game.add_role("vampire")
+async def vampire(game, phase="dawn", synchro=0):
+    pass
 
 @Game.add_role("villageois")
 async def villageois(game, phase="night", synchro=0):
