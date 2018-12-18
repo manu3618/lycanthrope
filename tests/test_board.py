@@ -334,9 +334,9 @@ async def test_victory_happy_path(distribution):
 
             for dead, doppel in product(game.players[3:] + [None], repeat=2):
                 if dead:
-                    game.dead = [dead]
+                    game.dead = {dead}
                 else:
-                    game.dead = []
+                    game.dead = set()
 
                 with open(MOCK_IRC_FILE, "a") as fd:
                     fd.write(
