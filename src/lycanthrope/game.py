@@ -336,7 +336,7 @@ class Game:
             self.tokens[s0], self.tokens[s1] = self.tokens[s1], self.tokens[s0]
 
     async def night(self):
-        """Perform nigth steps.
+        """Perform night steps.
 
         /!\ Assume roles are dealt.
         """
@@ -546,7 +546,13 @@ class Game:
                 tsk.cancel()
         self.tasks = []
 
-        results = Counter(self.votes.values()).most_common()
+        protected = await self._role_callbacks["garde du corps"](
+            self, phase="day"
+        )
+        raw_results = Counter(self.votes.values())
+        if protected and protected in raw_results:
+            raw_results.pop(protected)
+        results = raw_results.most_common()
         if not results:
             msg = "Il n'y a pas de mort aujourd'hui."
             await notify_player(None, msg, self.bot)
@@ -884,9 +890,18 @@ async def franc_macon(game, phase="night", synchro=0):
 
 
 @Game.add_role("garde du corps")
-async def garde(game, phase="night", synchro=0):
-    # XXX
-    pass
+async def garde(game, phase="day", synchro=0):
+    if phase != "day":
+        return None
+    garde = game._get_player_nick(["garde du corps"], initial=False)
+    if not garde:
+        return None
+    protected = game.votes[garde]
+    msg = "Il y a un garde du corps ({}). Il protège {}.".format(
+        garde, protected
+    )
+    game._fire_and_forget(notify_player(None, msg, game.bot))
+    return protected
 
 
 @Game.add_role("gremlin")
