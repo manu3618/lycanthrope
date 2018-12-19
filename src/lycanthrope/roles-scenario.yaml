@@ -15,6 +15,9 @@ characters:
         order: # default: only awake during day
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
+    chasseur de fantôme:
+        description:
+        order:
     divinateur:
         description: >
             Il peut retourner une carte qui devient alors visible de
@@ -157,6 +160,24 @@ scenario:
             token: false
             roles: [loup garou, loup rêveur, insomniaque, voleur, gremlin,
                     villageois, villageois, voyante, la chose]
+        Nuit solitaire:
+            artefact: false
+            token: false
+            roles: [loup garou, voyante, voleur, gremlin, villageois,
+                    villageois, la chose]
+        Bénéfice:
+            artefact: false
+            token: false
+            min_player: 4
+            roles: [loup garou, loup shaman, chasseur, voyante, voleur,
+                    tanneur, gremlin, insomniaque, villageois, la chose]
+        Incertitude:
+            artefact: false
+            token: false
+            min_player: 4
+            roles: [loup garou, loup rêveur, tanneur, voyante, voleur,
+                    chasseur de fantôme, insomniaque, gremlin, franc maçon,
+                    franc maçon, chasseur, loup shaman, villageois]
     vampires contre village:
     bataille épique:
         Anarchie:

@@ -785,6 +785,11 @@ async def chasseur(game, phase="night", synchro=0):
         game._fire_and_forget(notify_player(None, msg, game.bot))
 
 
+@Game.add_role("chasseur de fantôme")
+async def chasseur_fantome(game, phase="night", synchro=0):
+    pass
+
+
 @Game.add_role("la chose")
 async def chose(game, phase="night", synchro=0):
     if not phase == "night":
