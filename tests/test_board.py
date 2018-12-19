@@ -500,12 +500,20 @@ async def test_victory_walker(game, players, scenario):
         assert players["winners"] == results[0]
 
 
-SCENARIOS = [name for name in get_scenario(CONFIG_FILE).values()]
+def iter_scenar_name(config_file=CONFIG_FILE):
+    for family in get_scenario(CONFIG_FILE).values():
+        if family is None:
+            continue
+        for scenario in family.keys():
+            yield scenario
+
+
+SCENARIOS = list(iter_scenar_name())
 PLAYERS = [players for players in iter_name_lists(max_len=20)]
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("scenario", SCENARIO)
+@pytest.mark.parametrize("scenario", SCENARIOS)
 @pytest.mark.parametrize("players", PLAYERS)
 async def test_scenario(game, scenario, players):
     """Run game for the scenario."""
