@@ -896,12 +896,6 @@ async def insomniaque(game, phase="night", synchro=0):
         await notify_player(player, msg, game.bot)
 
 
-@Game.add_role("loup shaman")
-async def loup_shaman(game, phase="night", synchro=0):
-    # XXX
-    pass
-
-
 @Game.add_role("loup garou")
 async def loup_garou(game, phase="night", synchro=0):
     if phase != "night":
@@ -939,6 +933,21 @@ async def loup_garou(game, phase="night", synchro=0):
         msg = "Le loup rêveur est {}.".format(loup_reveur)
         for players in loups:
             game._fire_and_forget(notify_player(player, msg, game.bot))
+
+
+@Game.add_role("loup shaman")
+async def loup_shaman(game, phase="night", synchro=0):
+    if not phase == "night":
+        return
+    sham = game._get_player_nick(["loup shaman"])
+    if not sham:
+        return
+
+    msg = "Quelle carte veux-tu voir? "
+    await notify_player(sham, msg, game.bot)
+    choice = await get_choice(sham, game.players[3:], game.bot)
+    msg = "Le role de {} est {}.".format(choice, game.initial_roles[choice])
+    game._fire_and_forget(notify_player(sham, msg, game.bot))
 
 
 @Game.add_role("noiseuse")

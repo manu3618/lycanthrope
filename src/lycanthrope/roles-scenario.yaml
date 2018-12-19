@@ -55,8 +55,12 @@ characters:
         order: 2
         group: loups garous
     loup shaman:
-        order:
+        description: >
+            Le loup shaman se réveille une deuxième fois et peux alors
+            consulter une carte de son choix.
+        order: 2C
         group: loups garous
+        synchro: 2C
     noiseuse:
         description: Intervertie 2 rôles qui ne sont pas elle.
         order: 7
