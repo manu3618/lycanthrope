@@ -138,7 +138,7 @@ scenario:
             artefact: false
             token: false
             roles: [loup garou, loup shaman, voyante, voleur, gremlin,
-                            villageois, vollageois, chose]
+                    villageois, vollageois, la chose]
         Sombre réveil:
             artefact: false
             token: false
@@ -152,6 +152,11 @@ scenario:
                 - garde du corps
                 - villageois
                 - loup rêveur
+        Pleine lune:
+            artefact: false
+            token: false
+            roles: [loup garou, loup rêveur, insomniaque, voleur, gremlin,
+                    villageois, villageois, voyante, la chose]
     vampires contre village:
     bataille épique:
         Anarchie:
