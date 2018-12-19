@@ -294,14 +294,18 @@ class Game:
         # check vampire token
         vamp = [
             player
-            for player in self.tokens
+            for player in self.players
             if self.tokens[player] == "vampire"
         ]
         if vamp:
-            group_member["vampire"].add(vamp)
+            for group_name in groups:
+                try:
+                    group_member[group_name].remove(vamp[0])
+                except KeyError:
+                    pass
+            group_member["vampire"].add(vamp[0])
 
         group_member["monstres"].update(group_member.get("vampire", set()))
-
         winners = await self.victory_walker(group_member)
 
         return (
@@ -1143,7 +1147,6 @@ async def soulard(game, phase="night", synchro=0):
 
 @Game.add_role("tanneur")
 async def tanneur(game, phase="night", synchro=0):
-    # XXX
     pass
 
 
@@ -1155,7 +1158,6 @@ async def trappeur(game, phase="night", synchro=0):
 
 @Game.add_role("vampire")
 async def vampire(game, phase="dawn", synchro=-6):
-    # XXX
     if phase != "dawn":
         return
     vamp = game._get_player_nick(["vampire", "le comte", "le maître"])
