@@ -290,6 +290,16 @@ class Game:
         group_member["monstres"].update(
             group_member.get("loups garous", set())
         )
+
+        # check vampire token
+        vamp = [
+            player
+            for player in self.tokens
+            if self.tokens[player] == "vampire"
+        ]
+        if vamp:
+            group_member["vampire"].add(vamp)
+
         group_member["monstres"].update(group_member.get("vampire", set()))
 
         winners = await self.victory_walker(group_member)
@@ -841,6 +851,12 @@ async def chose(game, phase="night", synchro=0):
     game._fire_and_forget(notify_player(touched, msg, game.bot))
 
 
+@Game.add_role("le comte")
+async def comte(game, phase="dawn", synchro=0):
+    # XXX
+    pass
+
+
 @Game.add_role("comploteuse")
 async def comploteuse(game, phase="dawn", synchro="-3"):
     if phase != "dawn":
@@ -1060,6 +1076,12 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     game.role_swaps.append((first, second))
 
 
+@Game.add_role("prêtre")
+async def pretre(game, phase="night", synchor=0):
+    # XXX
+    pass
+
+
 @Game.add_role("sbire")
 async def sbire(game, phase="night", synchro=0):
     """Execute sbire's turn.
@@ -1121,12 +1143,46 @@ async def soulard(game, phase="night", synchro=0):
 
 @Game.add_role("tanneur")
 async def tanneur(game, phase="night", synchro=0):
+    # XXX
+    pass
+
+
+@Game.add_role("trappeur")
+async def trappeur(game, phase="night", synchro=0):
+    # XXX
     pass
 
 
 @Game.add_role("vampire")
-async def vampire(game, phase="dawn", synchro=0):
-    pass
+async def vampire(game, phase="dawn", synchro=-6):
+    # XXX
+    if phase != "dawn":
+        return
+    vamp = game._get_player_nick(["vampire", "le comte", "le maître"])
+    if not vamp:
+        return
+
+    msg = (
+        "Les vampires sont {}. \n"
+        "Vous devez choisir qui mordre pour le transformer "
+        "en vampire. En cas d'égalité dans les votes, le joueur converti "
+        "sera pris au hasard parmis les plus mordus"
+    ).format(", ".join(vamp))
+    for player in vamp:
+        await notify_player(player, msg, game.bot)
+
+    players = game.players[3:]
+    tasks = [asyncio.ensure_future(get_choice(i, players, game.bot))
+             for i in vamp]
+
+    finished, _ = asyncio.wait(tasks)
+    results = Counter(finished.result())
+    msg = "Les joueurs mordus sont: {}".format(
+        "\n".join("{}: {}" for k, v in results.most_common())
+    )
+    new_vamp = results.most_common()[0][0]
+    msg = "Le joueur tranformé en vampire est {}".format(new_vamp)
+    game.token_swaps((synchro, new_vamp, vampire))
 
 
 @Game.add_role("villageois")

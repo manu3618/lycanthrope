@@ -16,8 +16,11 @@ characters:
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
     chasseur de fantôme:
-        description:
-        order:
+        description: >
+            Il peut regarder jusqu'à 2 cartes. S'il tombe sur un loup garou,
+            un vampire ou le tanneur, il prends son rôle.
+        order: 5C
+        synchro: 5C
     divinateur:
         description: >
             Il peut retourner une carte qui devient alors visible de
@@ -102,7 +105,9 @@ characters:
         order: 9
         group: tanneur
     vampire:
-        description:
+        description: >
+            Les vampires mordent un joueur et échangent sa marque contre la
+            marque du vampire.
         order: -6
         group: vampires
     voleur:
@@ -179,5 +184,17 @@ scenario:
                     chasseur de fantôme, insomniaque, gremlin, franc maçon,
                     franc maçon, chasseur, loup shaman, villageois]
     vampires contre village:
+        Nuit tombante:
+            artefact: false
+            token: true
+            roles:
+                - vampire
+                - le comte
+                - prêtre
+                - trappeur
+                - voleur
+                - gremlin
+                # - copycat
+                - la chose
     bataille épique:
         Anarchie:
