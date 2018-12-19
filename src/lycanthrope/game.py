@@ -866,8 +866,24 @@ async def franc_macon(game, phase="night", synchro=0):
 
 @Game.add_role("gremlin")
 async def gremlin(game, phase="night", synchro=0):
-    # XXX
-    pass
+    if not phase == "day":
+        return
+    grem = game._get_player_nick(["gremlin"])
+    if not grem:
+        return
+    players = set(game.players[3:])
+    msg = "Veux-tu échanger des marques (jetons) ou des rôles ?"
+    await notify_player(grem, msg, game.bot)
+    choice = await get_choice(grem, ("jeton", "role"), game.bot)
+    msg = "Choisi les 2 joueurs"
+    await notify_player(grem, msg, game.bot)
+    j0 = await get_choice(grem, players, game.bot)
+    players.pop(j0)
+    j1 = await get_choice(grem, players, game.bot)
+    if choice == "jeton":
+        game.tokens[j0], game.token[j1] = game.tokens[j1], game.token[j0]
+    else:
+        game.roles_swaps.append((j0, j1))
 
 
 @Game.add_role("insomniaque")
@@ -877,7 +893,7 @@ async def insomniaque(game, phase="night", synchro=0):
             pl for pl, ro in game.initial_role.values() if ro == "insomiaque"
         )
         msg = "Ton rôle est à présent {}.".format(game.current_roles[player])
-        await notify_player(player, msg)
+        await notify_player(player, msg, game.bot)
 
 
 @Game.add_role("loup shaman")

@@ -36,6 +36,12 @@ characters:
             Villageois comme les autres. Lors de son tour,
             ils prennent connaissance de l'identité des autres franc-maçon.
         order: 4
+    gremlin:
+        description: >
+            Le gremlin sème la zizane en intervertissant soit des jetons, soit
+            des rôles.
+        order: 7D
+        group: villageois
     insomniaque:
         description: Regarde sa carte.
         order: 9
