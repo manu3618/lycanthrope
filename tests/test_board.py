@@ -302,7 +302,7 @@ def distributions():
     base.update({"lg" + str(i): "loup garou" for i in range(2)})
     base.update({"fm" + str(i): "franc maçon" for i in range(2)})
 
-    for l in 3, 5, 10:
+    for l in 3, 8:
         for distr in combinations(base, l):
             ret = center.copy()
             ret.update({name: base[name] for name in distr})
