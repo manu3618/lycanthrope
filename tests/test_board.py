@@ -510,7 +510,7 @@ PLAYERS = [players for players in iter_name_lists(max_len=20)]
 async def test_scenario(game, scenario, players):
     """Run game for the scenario."""
     with open(MOCK_IRC_FILE, "a") as fd:
-        fd.write("\n===== TEST test_scenario =====\n")
+        fd.write("\n===== TEST test_scenario ({}) =====\n".format(scenario))
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):

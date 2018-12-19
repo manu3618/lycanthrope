@@ -900,12 +900,15 @@ async def insomniaque(game, phase="night", synchro=0):
 async def loup_garou(game, phase="night", synchro=0):
     if phase != "night":
         return
-    loups = list(
-        chain(
-            game._get_player_nick(role)
-            for role in ["loup alpha", "loup garou", "loup shaman"]
-        )
-    )
+
+    loups = []
+    for role in ("loup alpha", "loup garou", "loup shaman"):
+        cur_loup = game._get_player_nick(role)
+        if isinstance(cur_loup, list):
+            loups.extend(cur_loup)
+        if isinstance(cur_loup, str):
+            loups.append(cur_loup)
+
     loup_reveur = game._get_player_nick("loup rêveur")
 
     if not loups:
@@ -994,21 +997,19 @@ async def sbire(game, phase="night", synchro=0):
     """
     if phase != "night":
         return
-    loups = list(
-        chain(
-            game._get_player_nick(role)
-            for role in [
-                "loup alpha",
-                "loup garou",
-                "loup shaman",
-                "loup rêveur",
-            ]
-        )
-    )
+
+    loups = []
+    for role in ("loup alpha", "loup garou", "loup shaman", "loup rêveur"):
+        cur_loup = game._get_player_nick(role)
+        if isinstance(cur_loup, list):
+            loups.extend(cur_loup)
+        if isinstance(cur_loup, str):
+            loups.append(cur_loup)
+
     sbire = game._get_player_nick("sbire")
     if sbire and loups:
-        msg = "Il y a {} loup garou ({}).".format(
-            len(loups), ", ".format(loups)
+        msg = "Il y a {} loups garous ({}).".format(
+            len(loups), ", ".join(loups)
         )
         game._fire_and_forget(notify_player(sbire, msg, game.bot))
 
