@@ -854,7 +854,7 @@ async def cupidon(game, phase="dawn", synchro="-4"):
 async def divinateur(game, phase="night", synchro=0):
     if phase != "day":
         return
-    div = game._get_player_nick("divinateur")
+    div = game._get_player_nick(["divinateur"])
     if not div:
         return
     msg = "Quel joueur veux-tu révéler ?"
@@ -941,15 +941,10 @@ async def loup_garou(game, phase="night", synchro=0):
     if phase != "night":
         return
 
-    loups = []
-    for role in ("loup alpha", "loup garou", "loup shaman"):
-        cur_loup = game._get_player_nick(role)
-        if isinstance(cur_loup, list):
-            loups.extend(cur_loup)
-        if isinstance(cur_loup, str):
-            loups.append(cur_loup)
-
-    loup_reveur = game._get_player_nick("loup rêveur")
+    loups = game._get_player_nick(("loup alpha", "loup garou", "loup shaman"))
+    if isinstance(loups, str):
+        loups = [loups]
+    loup_reveur = game._get_player_nick(["loup rêveur"])
 
     if not loups:
         return
@@ -1043,13 +1038,11 @@ async def sbire(game, phase="night", synchro=0):
     if phase != "night":
         return
 
-    loups = []
-    for role in ("loup alpha", "loup garou", "loup shaman", "loup rêveur"):
-        cur_loup = game._get_player_nick(role)
-        if isinstance(cur_loup, list):
-            loups.extend(cur_loup)
-        if isinstance(cur_loup, str):
-            loups.append(cur_loup)
+    loups = game._get_player_nick(
+        ("loup alpha", "loup garou", "loup shaman", "loup rêveur")
+    )
+    if isinstance(loups, str):
+        loups = [loups]
 
     sbire = game._get_player_nick("sbire")
     if sbire and loups:
