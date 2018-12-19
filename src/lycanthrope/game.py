@@ -787,7 +787,33 @@ async def chasseur(game, phase="night", synchro=0):
 
 @Game.add_role("chasseur de fantôme")
 async def chasseur_fantome(game, phase="night", synchro=0):
-    pass
+    if phase != "night":
+        return
+    cha = game._get_player_nick(["chasseur de fantôme"])
+    if not cha:
+        return
+
+    players = set(game.players[3:])
+    players.pop(cha)
+    for _ in range(2):
+        msg = "Veux-tu voir une carte ?"
+        await notify_player(cha, msg, game.bot)
+        choice = await get_choice(cha, ("oui", "non"), game.bot)
+        if choice == "non":
+            return
+
+        msg = "Quel joueur veux-tu regarder ?"
+        choice = await get_choice(cha, players, game.bot)
+        players.pop(choice)
+        role = game.current_roles[choice]
+        msg = "{} est {}.".format(choice, role)
+        await notify_player(cha, msg, game.bot)
+
+        if "loup" in role or "vampire" in role or role == "tanneur":
+            msg = "Tu deviens toi-même un {}.".format(role)
+            game._fire_and_forget(notify_player(cha, msg, game.bot))
+            game.current_roles[cha] = role
+            return
 
 
 @Game.add_role("la chose")
