@@ -498,3 +498,28 @@ async def test_victory_walker(game, players, scenario):
         assert players["winners"][scenario] == results[0]
     else:
         assert players["winners"] == results[0]
+
+
+SCENARIOS = [name for name in get_scenario(CONFIG_FILE).values()]
+PLAYERS = [players for players in iter_name_lists(max_len=20)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("scenario", SCENARIO)
+@pytest.mark.parametrize("players", PLAYERS)
+async def test_scenario(game, scenario, players):
+    """Run game for the scenario."""
+    with open(MOCK_IRC_FILE, "a") as fd:
+        fd.write("\n===== TEST test_scenario =====\n")
+
+    with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
+        with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
+
+            for player in players:
+                try:
+                    game.add_player(player)
+                except RuntimeWarning:
+                    # maxnumber of players reached
+                    pass
+            game.set_scenario(scenario)
+            await game.game()

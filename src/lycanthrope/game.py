@@ -39,18 +39,21 @@ class Game:
         self.in_progress = False
         self.dealer = {}
         self.role_swaps = []  # list of tuple of exchanged roles.
-        self.tokens = {
-            "assassin": "assassin",
-            "chauve-souris": "chauve-souris",
-            "peur": "peur",
-            "peste": "peste",
-            "clarté 0": "clarté",
-            "clarté 1": "clarté",
-            "vampire": "vampire",
-            "traitre": "traitre",
-            "amour 0": "amour",
-            "amour 1": "amour",
-        }
+        self.tokens = defaultdict(lambda: "clareté")
+        self.tokens.update(
+            {
+                "assassin": "assassin",
+                "chauve-souris": "chauve-souris",
+                "peur": "peur",
+                "peste": "peste",
+                "clarté 0": "clarté",
+                "clarté 1": "clarté",
+                "vampire": "vampire",
+                "traitre": "traitre",
+                "amour 0": "amour",
+                "amour 1": "amour",
+            }
+        )
         self.victory_tree = victory_tree()
         self.scenario_dict = {}
         self.overall_max_nb = {}
@@ -381,7 +384,7 @@ class Game:
             timeout (int): maximal time (in seconds) before closing the votes.
         """
         if not self.scenario:
-            self.set_sceario()
+            self.set_scenario()
         if len(self.players) < 6:
             msg = (
                 "Le nombre de joueurs n'est pas bon. "
@@ -390,11 +393,7 @@ class Game:
             ).format(str(len(self.players) - 3))
             await notify_player(None, msg, self.bot)
             return
-        max_nb = 13
-        if "roles" in self.scenario_dict[self.scenario]:
-            max_nb = len(self.scenario_dict[self.scenario]["roles"])
-        if "max_nb" in self.scenario_dict[self.scenario]:
-            max_nb = sum(self.scenario_dict[self.scenario]["max_nb"].values())
+        max_nb = sum(self.max_role_nb.values())
         if len(self.players) > max_nb:
             msg = (
                 "Le nombre de joueurs n'est pas bon. "
@@ -423,10 +422,10 @@ class Game:
 
         # notify token
         for nick in self.players[3:]:
-            msg = "Tu possède la marque suivante: {}".format(self.token[nick])
+            msg = "Tu possède la marque suivante: {}".format(self.tokens[nick])
             self._fire_and_forget(notify_player(nick, msg, self.bot))
-        self._roles_callback["amoureux"](self, phase="night")
-        self.clean_up()
+        await self._role_callbacks["amoureux"](self, phase="night")
+        await self.clean_up()
 
         msg = (
             "La nuit tombe sur le village. "
@@ -464,7 +463,7 @@ class Game:
             "c'est à dire le{sj} joueur{sj} suivant{sj}: {j}."
         ).format(
             sg="s" if victory[0] else "",
-            v="sont" if len(victory[0] > 1) else "est",
+            v="sont" if len(victory[0]) > 1 else "est",
             g=", ".join(victory[0]) if victory[0] else "personne",
             sj="s" if victory[1] else "",
             j=", ".join(victory[1]) if victory[1] else "personne",
@@ -473,8 +472,8 @@ class Game:
 
         traitre = [
             nick
-            for nick, value in self.tokens.values()
-            if value == "traire" and nick in self.players[:3]
+            for nick, value in self.tokens.items()
+            if value == "traitre" and nick in self.players[:3]
         ]
 
         if traitre:
@@ -667,7 +666,7 @@ def get_dealer(*args, **kwargs):
     mandatory = kwargs.get("mandatory", ["loup garou", "voyante"])
     max_nb = kwargs.get("max_nb", {})
     roles = kwargs.get("roles", [])
-    max_players = kwargs.get("max_players", 10)
+    max_players = kwargs.get("max_players", 19)
     min_players = kwargs.get("min_players", 3)
     all_roles = kwargs.get("all_roles", {})
 

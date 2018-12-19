@@ -15,6 +15,10 @@ characters:
         order: # default: only awake during day
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
+    la chose:
+        description:
+        order:
+        group:
     comploteuse:
         description: >
             Elle échange la marque de n'importe quel joueur contre celle du
@@ -44,6 +48,9 @@ characters:
             il prends connaissance d'une carte au centre.
         order: 2
         group: loups garous
+    loup shaman:
+        order:
+        group: loups garous
     noiseuse:
         description: Intervertie 2 rôles qui ne sont pas elle.
         order: 7
@@ -60,6 +67,10 @@ characters:
         description: Le but du tanneur est de mourir.
         order: 9
         group: tanneur
+    vampire:
+        description:
+        order: -6
+        group: vampires
     voleur:
         description: >
             Échange sa carte avec n'importe quel autre joueur
