@@ -846,8 +846,21 @@ async def cupidon(game, phase="dawn", synchro="-4"):
 
 @Game.add_role("divinateur")
 async def divinateur(game, phase="night", synchro=0):
-    # XXX
-    pass
+    if phase != "day":
+        return
+    div = game._get_player_nick("divinateur")
+    if not div:
+        return
+    msg = "Quel joueur veux-tu révéler ?"
+    await notify_player(div, msg, game.bot)
+    choice = await get_choice(div, game.players[3:], game.bot)
+    role = game.current_roles[choice]
+    msg = "{} est {}.".format(choice, role)
+    if "loup" in role or "vampire" in role or role in ("assassin", "tanneur"):
+        notified = div
+    else:
+        notified = None
+    game._fire_and_forget(notified, msg, game.bot)
 
 
 @Game.add_role("franc maçon")
