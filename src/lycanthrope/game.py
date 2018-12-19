@@ -1046,8 +1046,23 @@ async def sbire(game, phase="night", synchro=0):
 
 @Game.add_role("sorcière")
 async def sorciere(game, phase="night", synchro=0):
-    # XXX
-    pass
+    if phase != "night":
+        return
+    sor = game._get_player_nick("sorcière")
+    if not sor:
+        return
+
+    msg = "Veux-tu consulter une carte et si oui laquelle?"
+    await notify_player(sor, msg, game.bot)
+    choice = await get_choice(sor, ["Non", "0", "1", "2"])
+    if choice == "Non":
+        return
+    msg = "Il s'agit du rôle de {}.".format(game.current_roles[choice])
+    await notify_player(sor, msg, game.bot)
+    msg = "A qui veux-tu faire endosser ce rôle ?"
+    await notify_player(sor, msg, game.bot)
+    player = await get_choice(sor, game.players[3:], game.bot)
+    game.role_swaps.append((choice, player))
 
 
 @Game.add_role("soulard")
