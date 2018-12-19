@@ -1081,9 +1081,28 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
 
 
 @Game.add_role("prêtre")
-async def pretre(game, phase="night", synchor=0):
-    # XXX
-    pass
+async def pretre(game, phase="night", synchro=-2):
+    if phase != "dawn":
+        return
+    pretre = game._get_player_nick(["prêtre"])
+    if not pretre:
+        return
+
+    msg = "Contre quelle marque vas-tu échanger la tienne ?"
+    await notify_player(pretre, msg, game.bot)
+    available_tokens = {"clareté 0", "clareté 1"}
+    choice = await get_choice(pretre, available_tokens, game.bot)
+    available_tokens.remove(choice)
+    game.token_swaps.append((-2, choice, "prêtre"))
+    msg = "Veux-tu échanger la marque d'un joueur ?"
+    await notify_player(pretre, msg, game.bot)
+    choice = await get_choice(pretre, ("oui", "non"), game.bot)
+    if choice == "oui":
+        msg = "Quel joueur ?"
+        players = set(game.players[3:])
+        players.remove(pretre)
+        choice = await get_choice(pretre, players, game.bot)
+        game.token_swaps.append((-2, choice, available_tokens.pop()))
 
 
 @Game.add_role("sbire")

@@ -85,6 +85,9 @@ characters:
     noiseuse:
         description: Intervertie 2 rôles qui ne sont pas elle.
         order: 7
+    prêtre:
+        description: Purifie en échangeant des marques.
+        order: -2
     sbire:
         description: >
             Ce joueur fait parti de la meute de loups garous.
