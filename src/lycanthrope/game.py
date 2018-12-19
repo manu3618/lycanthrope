@@ -781,8 +781,27 @@ async def chasseur(game, phase="night", synchro=0):
 
 @Game.add_role("la chose")
 async def chose(game, phase="night", synchro=0):
-    # XXX
-    pass
+    if not phase == "night":
+        return
+    player_li = game.players[3:]
+    player_pos = {nick: pos for pos, nick in enumerate(player_li)}
+    player_nb = len(player_li)
+    chose = game._get_player_nick(["la chose"])
+    if not chose:
+        return
+
+    neigh = [player_li[(player_pos[chose] + i) % player_nb] for i in (-1, 1)]
+    msg = "Tes voision sont {} et {}. Lequel veux-tu touccher ?".format(
+        neigh[0], neigh[1]
+    )
+    touched = await get_choice(chose, neigh, game.bot)
+
+    neigh = [player_li[(player_pos[touched] + i) % player_nb] for i in (-1, 1)]
+    msg = (
+        "Tes voisins sont {} et {}, et l'un d'eux est la chose "
+        "et la chose t'astouché"
+    ).format(neigh[0], neigh[1])
+    game._fire_and_forget(notify_player(touched, msg, game.bot))
 
 
 @Game.add_role("comploteuse")

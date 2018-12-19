@@ -16,9 +16,9 @@ characters:
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
     la chose:
-        description:
-        order:
-        group:
+        description: Signale sa présence a un de ses voisin.
+        order: 4B
+        group: villageois
     comploteuse:
         description: >
             Elle échange la marque de n'importe quel joueur contre celle du
