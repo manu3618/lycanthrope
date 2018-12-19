@@ -104,6 +104,11 @@ characters:
         description: Le but du tanneur est de mourir.
         order: 9
         group: tanneur
+    trappeur:
+        description: >
+            Il peut consulter le rôle et la marque de 2 joueurs différents.
+        order: 5D
+        synchro: 5D
     vampire:
         description: >
             Les vampires mordent un joueur et échangent sa marque contre la

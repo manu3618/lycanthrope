@@ -1152,8 +1152,33 @@ async def tanneur(game, phase="night", synchro=0):
 
 @Game.add_role("trappeur")
 async def trappeur(game, phase="night", synchro=0):
-    # XXX
-    pass
+    if phase != "night":
+        return
+    trap = game._get_nick_player(["trappeur"])
+    if not trap:
+        return
+    players = set(game.players[3:])
+
+    msg = "Veux-tu consulter le rôle d'un joueur ?"
+    await notify_player(trap, msg, game.bot)
+    choice = await get_choice(trap, ("oui", "non"), game.bot)
+    req = "Quel joueur veux-tu consulter ?"
+    if choice == "oui":
+        await notify_player(trap, req, game.bot)
+        choice = await get_choice(trap, players, game.bot)
+        msg = "{} est {}.".format(choice, game.current_roles[choice])
+        players.remove(choice)
+        await notify_player(trap, msg, game.bot)
+
+    msg = "Veux-tu consulter la marque d'un joueur ?"
+    await notify_player(trap, msg, game.bot)
+    choice = await get_choice(trap, ("oui", "non"), game.bot)
+    if choice == "oui":
+        await notify_player(trap, req, game.bot)
+        choice = await get_choice(trap, players, game.bot)
+        msg = "{} est marqué de {}.".format(choice, game.tokens[choice])
+        players.remove(choice)
+        await notify_player(trap, msg, game.bot)
 
 
 @Game.add_role("vampire")
@@ -1174,8 +1199,9 @@ async def vampire(game, phase="dawn", synchro=-6):
         await notify_player(player, msg, game.bot)
 
     players = game.players[3:]
-    tasks = [asyncio.ensure_future(get_choice(i, players, game.bot))
-             for i in vamp]
+    tasks = [
+        asyncio.ensure_future(get_choice(i, players, game.bot)) for i in vamp
+    ]
 
     finished, _ = asyncio.wait(tasks)
     results = Counter(finished.result())
