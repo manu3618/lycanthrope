@@ -844,6 +844,12 @@ async def cupidon(game, phase="dawn", synchro="-4"):
     game.token_swaps.append((synchro, "amour 1", choice))
 
 
+@Game.add_role("divinateur")
+async def divinateur(game, phase="night", synchro=0):
+    # XXX
+    pass
+
+
 @Game.add_role("franc maçon")
 async def franc_macon(game, phase="night", synchro=0):
     """Execute franc macon's turn.
@@ -862,6 +868,12 @@ async def franc_macon(game, phase="night", synchro=0):
     else:
         msg = "Tu es le seul franc maçon."
         game._fire_and_forget(notify_player(frama, msg, game.bot))
+
+
+@Game.add_role("garde du corps")
+async def garde(game, phase="night", synchro=0):
+    # XXX
+    pass
 
 
 @Game.add_role("gremlin")
@@ -938,6 +950,11 @@ async def loup_garou(game, phase="night", synchro=0):
             game._fire_and_forget(notify_player(player, msg, game.bot))
 
 
+@Game.add_role("loup rêveur")
+async def loup_reveur(game, phase="night", synchro=0):
+    pass
+
+
 @Game.add_role("loup shaman")
 async def loup_shaman(game, phase="night", synchro=0):
     if not phase == "night":
@@ -1012,6 +1029,12 @@ async def sbire(game, phase="night", synchro=0):
             len(loups), ", ".join(loups)
         )
         game._fire_and_forget(notify_player(sbire, msg, game.bot))
+
+
+@Game.add_role("sorcière")
+async def sorciere(game, phase="night", synchro=0):
+    # XXX
+    pass
 
 
 @Game.add_role("soulard")

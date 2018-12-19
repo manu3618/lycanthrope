@@ -15,6 +15,12 @@ characters:
         order: # default: only awake during day
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
+    divinateur:
+        description: >
+            Il peut retourner une carte qui devient alors visible de
+            tous.
+        order: 10
+        synchro: 10
     la chose:
         description: Signale sa présence a un de ses voisin.
         order: 4B
@@ -36,6 +42,10 @@ characters:
             Villageois comme les autres. Lors de son tour,
             ils prennent connaissance de l'identité des autres franc-maçon.
         order: 4
+    garde du corps:
+        description: >
+            Au moment du vote, la personne pour qui le garde du corps vote est
+            protégé et ne peut mourir à cause des votes du village.
     gremlin:
         description: >
             Le gremlin sème la zizane en intervertissant soit des jetons, soit
@@ -61,6 +71,11 @@ characters:
         order: 2C
         group: loups garous
         synchro: 2C
+    loup rêveur:
+        description: >
+            C'est un loup comme les autres, sauf qu'il ne se réveille pas.
+        order: 2C
+        group: loups garous
     noiseuse:
         description: Intervertie 2 rôles qui ne sont pas elle.
         order: 7
@@ -73,6 +88,12 @@ characters:
     soulard:
         description:  Échange sa carte avec une du centre sans les regarder.
         order: 7
+    sorcière:
+        description: >
+            Elle peut consulter une carte du milieu. Dans ce cas, elle doit
+            ensuite l'échanger contre la carte de n'importe quel joueur.
+        order: 6B
+        synchro: 6B
     tanneur:
         description: Le but du tanneur est de mourir.
         order: 9
@@ -118,6 +139,19 @@ scenario:
             token: false
             roles: [loup garou, loup shaman, voyante, voleur, gremlin,
                             villageois, vollageois, chose]
+        Sombre réveil:
+            artefact: false
+            token: false
+            roles:
+                - loup garou
+                - loup shaman
+                - divinateur
+                - sorcière
+                # - copycat
+                - villageois
+                - garde du corps
+                - villageois
+                - loup rêveur
     vampires contre village:
     bataille épique:
         Anarchie:
