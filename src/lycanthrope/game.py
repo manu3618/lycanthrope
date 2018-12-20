@@ -638,13 +638,15 @@ class Game:
         await notify_player(player, msg, self.bot)
         return await get_choice(player, choices, self.bot)
 
-    def _get_player_nick(self, roles, initial=True):
+    def _get_player_nick(self, roles, initial=True, check_afraid=False):
         """Return the nick of the player having the role.
 
         Args:
             roles (list, tuple): list of role to search for
             initial (bool): if true, search into initial distribution,
         otherwise, search in current  distribution.
+            check_afraid (bool): if true, donnot return players with "peur"
+        token.
         """
         if initial:
             cur_roles = self.initial_roles
@@ -653,7 +655,13 @@ class Game:
         player = [
             nick
             for nick, role in cur_roles.items()
-            if role in roles and nick not in ("0", "1", "2")
+            if all(
+                [
+                    role in roles,
+                    nick not in ("0", "1", "2"),
+                    not check_afraid or self.tokens[nick] != "peur",
+                ]
+            )
         ]
         if len(player) == 2:
             return player
@@ -807,7 +815,7 @@ async def chasseur(game, phase="night", synchro=0):
 async def chasseur_fantome(game, phase="night", synchro=0):
     if phase != "night":
         return
-    cha = game._get_player_nick(["chasseur de fantôme"])
+    cha = game._get_player_nick(["chasseur de fantôme"], check_afraid=True)
     if not cha:
         return
 
@@ -841,7 +849,7 @@ async def chose(game, phase="night", synchro=0):
     player_li = game.players[3:]
     player_pos = {nick: pos for pos, nick in enumerate(player_li)}
     player_nb = len(player_li)
-    chose = game._get_player_nick(["la chose"])
+    chose = game._get_player_nick(["la chose"], check_afraid=True)
     if not chose:
         return
 
@@ -860,9 +868,20 @@ async def chose(game, phase="night", synchro=0):
 
 
 @Game.add_role("le comte")
-async def comte(game, phase="dawn", synchro=0):
-    # XXX
-    pass
+async def comte(game, phase="dawn", synchro="-6B"):
+    com = game._get_player_nick(["le comte"])
+    if phase != "dawn" or not com:
+        return
+
+    players = set(game.players[3:])
+    players.remove(com)
+    msg = (
+        "Quel joueur veux-tu effrayer en échangeant son jeton "
+        "contre le jeton de peur ?"
+    )
+    await notify_player(com, msg, game.bot)
+    choice = await get_choice(com,  players, game.bot)
+    game.token_swaps.append((synchro, "peur", choice))
 
 
 @Game.add_role("comploteuse")
@@ -909,7 +928,7 @@ async def cupidon(game, phase="dawn", synchro="-4"):
 async def divinateur(game, phase="night", synchro=0):
     if phase != "day":
         return
-    div = game._get_player_nick(["divinateur"])
+    div = game._get_player_nick(["divinateur"], check_afraid=True)
     if not div:
         return
     msg = "Quel joueur veux-tu révéler ?"
@@ -932,7 +951,7 @@ async def franc_macon(game, phase="night", synchro=0):
     """
     if phase != "night":
         return
-    frama = game._get_player_nick(["franc maçon"])
+    frama = game._get_player_nick(["franc maçon"], check_afraid=True)
     if not frama:
         return
     elif isinstance(frama, list):
@@ -996,10 +1015,12 @@ async def loup_garou(game, phase="night", synchro=0):
     if phase != "night":
         return
 
-    loups = game._get_player_nick(("loup alpha", "loup garou", "loup shaman"))
+    loups = game._get_player_nick(
+        ("loup alpha", "loup garou", "loup shaman"), check_afraid=True
+    )
     if isinstance(loups, str):
         loups = [loups]
-    loup_reveur = game._get_player_nick(["loup rêveur"])
+    loup_reveur = game._get_player_nick(["loup rêveur"], check_afraid=True)
 
     if not loups:
         return
@@ -1037,7 +1058,7 @@ async def loup_reveur(game, phase="night", synchro=0):
 async def loup_shaman(game, phase="night", synchro=0):
     if not phase == "night":
         return
-    sham = game._get_player_nick(["loup shaman"])
+    sham = game._get_player_nick(["loup shaman"], check_afraid=True)
     if not sham:
         return
 
@@ -1060,7 +1081,7 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     """
     if phase != "night":
         return
-    noiseuse = game._get_player_nick(["noiseuse"])
+    noiseuse = game._get_player_nick(["noiseuse"], check_afraid=True)
     if not noiseuse:
         return
 
@@ -1119,12 +1140,13 @@ async def sbire(game, phase="night", synchro=0):
         return
 
     loups = game._get_player_nick(
-        ("loup alpha", "loup garou", "loup shaman", "loup rêveur")
+        ("loup alpha", "loup garou", "loup shaman", "loup rêveur"),
+        check_afraid=True,
     )
     if isinstance(loups, str):
         loups = [loups]
 
-    sbire = game._get_player_nick("sbire")
+    sbire = game._get_player_nick(["sbire"], check_afraid=True)
     if sbire and loups:
         msg = "Il y a {} loups garous ({}).".format(
             len(loups), ", ".join(loups)
@@ -1136,7 +1158,7 @@ async def sbire(game, phase="night", synchro=0):
 async def sorciere(game, phase="night", synchro=0):
     if phase != "night":
         return
-    sor = game._get_player_nick("sorcière")
+    sor = game._get_player_nick(["sorcière"], check_afraid=True)
     if not sor:
         return
 
@@ -1158,7 +1180,7 @@ async def soulard(game, phase="night", synchro=0):
     """Execute the soulard's turn."""
     if phase != "night":
         return
-    soulard = game._get_player_nick(["soulard"])
+    soulard = game._get_player_nick(["soulard"], check_afraid=True)
     if not soulard:
         return
 
@@ -1177,7 +1199,7 @@ async def tanneur(game, phase="night", synchro=0):
 async def trappeur(game, phase="night", synchro=0):
     if phase != "night":
         return
-    trap = game._get_nick_player(["trappeur"])
+    trap = game._get_nick_player(["trappeur"], check_afraid=True)
     if not trap:
         return
     players = set(game.players[3:])
@@ -1246,7 +1268,7 @@ async def voleur(game, phase="night", synchro=0):
     """Execute the voleur's turn."""
     if phase != "night":
         return
-    voleur = game._get_player_nick(["voleur"])
+    voleur = game._get_player_nick(["voleur"], check_afraid=True)
     if not voleur:
         return
     msg = "Choisis quelle carte tu veux voler."
@@ -1269,7 +1291,7 @@ async def voyante(game, phase="night", synchro=0):
     """
     if phase != "night":
         return
-    voyante = game._get_player_nick(["voyante"])
+    voyante = game._get_player_nick(["voyante"], check_afraid=True)
     if not voyante:
         return
 

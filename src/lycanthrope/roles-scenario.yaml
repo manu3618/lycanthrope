@@ -21,14 +21,10 @@ characters:
             un vampire ou le tanneur, il prends son rôle.
         order: 5C
         synchro: 5C
-    divinateur:
-        description: >
-            Il peut retourner une carte qui devient alors visible de
-            tous.
-        order: 10
-        synchro: 10
     la chose:
-        description: Signale sa présence a un de ses voisin.
+        description: >
+            Elle se cache souvent sous les lits.
+            Elle signale sa présence a un de ses voisin.
         order: 4B
         group: villageois
     comploteuse:
@@ -37,12 +33,28 @@ characters:
             traitre.
         order: -3
         group: villageois
+    le comte:
+        description: >
+            Appartient au clan des vampires. Il échange la  marque d'un joueur
+            avec la marque de peur.
+            La marque de peur tétanise celui qui la possède.
+            Pendant la nuit il ne recevra aucune information,
+            ne sera pas capable d'effectuer d'action,
+            ne se signalera pas lorsqu'il le doit.
+        order: -6B
+        group: vampires
     cupidon:
         description: >
             Il peut rendre 2 joueurs amoureux. Cet amour est simboliséé par les
             marques d'amour.
         order: -4
         group: villageois
+    divinateur:
+        description: >
+            Il peut retourner une carte qui devient alors visible de
+            tous.
+        order: 10
+        synchro: 10
     franc maçon:
         description: >
             Villageois comme les autres. Lors de son tour,
