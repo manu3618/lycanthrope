@@ -247,7 +247,11 @@ class Game:
             check = list(state["dead"].keys())[0]
             checked_player = self._get_player_nick([check])
             if checked_player:
-                next_step = state["dead"][check][checked_player in self.dead]
+                if isinstance(checked_player, str):
+                    checked_player = [checked_player]
+                next_step = state["dead"][check][
+                    any(player in self.dead for player in checked_player)
+                ]
             else:
                 next_step = state["dead"][check][False]
         if "exist" in state:

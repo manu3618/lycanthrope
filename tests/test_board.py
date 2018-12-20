@@ -389,7 +389,7 @@ async def test_assassin(players):
             game.dealt_roles = set(game.current_roles.values())
 
             await game.dawn()
-            await mock_notify_player(None, str(game.tokens), game.bot)
+            # await mock_notify_player(None, str(game.tokens), game.bot)
 
 
 PLAYERS = [
@@ -491,9 +491,12 @@ async def test_victory_walker(game, players, scenario):
         game.add_player(player)
     game.initial_roles = players.get("roles", {}).copy()
     game.current_roles = players.get("roles", {}).copy()
-    game.dead = list(players.get("dead", []))
+    game.dead = set(players.get("dead", []))
     game.set_scenario(scenario)
-    results = await game.victory()
+    with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
+        with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
+            results = await game.victory()
+
     if isinstance(players["winners"], dict):
         assert players["winners"][scenario] == results[0]
     else:
