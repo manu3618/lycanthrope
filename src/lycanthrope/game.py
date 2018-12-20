@@ -564,12 +564,23 @@ class Game:
                 tsk.cancel()
         self.tasks = []
 
-        protected = await self._role_callbacks["garde du corps"](
-            self, phase="day"
-        )
         raw_results = Counter(self.votes.values())
-        if protected and protected in raw_results:
-            raw_results.pop(protected)
+
+        protect_tasks, _ = await asyncio.wait(
+            [
+                asyncio.ensure_future(
+                    self._role_callbacks[role](self, phase="day")
+                )
+                for role in ("garde du corps", "le maître")
+            ]
+        )
+        protected_players = [tsk.result() for tsk in protect_tasks]
+        for player in protected_players:
+            try:
+                raw_results.pop(player)
+            except KeyError:
+                pass
+
         results = raw_results.most_common()
         if not results:
             msg = "Il n'y a pas de mort aujourd'hui."
@@ -880,7 +891,7 @@ async def comte(game, phase="dawn", synchro="-6B"):
         "contre le jeton de peur ?"
     )
     await notify_player(com, msg, game.bot)
-    choice = await get_choice(com,  players, game.bot)
+    choice = await get_choice(com, players, game.bot)
     game.token_swaps.append((synchro, "peur", choice))
 
 
@@ -1069,6 +1080,27 @@ async def loup_shaman(game, phase="night", synchro=0):
     game._fire_and_forget(notify_player(sham, msg, game.bot))
 
 
+@Game.add_role("le maître")
+async def maitre(game, phase="night", synchro=0):
+    if phase != "day":
+        return None
+    maitre = game._get_player_nick(["le maître"])
+    if not maitre:
+        return None
+    vampire = game._get_player_nick(["vampire", "le comte"])
+    if isinstance(vampire, str):
+        vampire = [vampire]
+    vampire.extend(
+        [nick for nick, token in game.tokens.values() if token == "vampire"]
+    )
+    if any(game.votes[player] == maitre for player in vampire):
+        msg = "Le maître est protégé par un vampire."
+        game.fire_and_forget(notify_player(None, msg, game.bot))
+        return maitre
+    else:
+        return None
+
+
 @Game.add_role("noiseuse")
 async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     """Execute the noiseuse's turn.
@@ -1103,6 +1135,12 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     second = await get_choice(noiseuse, choice, game.bot)
 
     game.role_swaps.append((first, second))
+
+
+@Game.add_role("pestiféré")
+async def pestifere(game, phase="night", synchro="0"):
+    # XXX
+    pass
 
 
 @Game.add_role("prêtre")

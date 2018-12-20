@@ -94,6 +94,11 @@ characters:
             C'est un loup comme les autres, sauf qu'il ne se réveille pas.
         order: 2C
         group: loups garous
+    le maître:
+        description: >
+            Si lors du vote un vampire vote contre lui, il est protégé.
+        order: -6
+        group: vampires
     noiseuse:
         description: Intervertie 2 rôles qui ne sont pas elle.
         order: 7
@@ -216,5 +221,17 @@ scenario:
                 - gremlin
                 # - copycat
                 - la chose
+        Jour d'éléction:
+            artefact: false
+            token: true
+            roles:
+                - vampire
+                - le maître
+                # - copycat
+                - pestiféré
+                - trappeur
+                - la chose
+                - comploteuse
+                - voleur
     bataille épique:
         Anarchie:
