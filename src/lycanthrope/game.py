@@ -312,9 +312,16 @@ class Game:
         group_member["monstres"].update(group_member.get("vampire", set()))
         winners = await self.victory_walker(group_member)
 
+        looser = await self._role_callbacks["pestiféré"](self, phase="day")
+
         return (
             winners,
-            [member for group in winners for member in group_member[group]],
+            [
+                member
+                for group in winners
+                for member in group_member[group]
+                if member not in looser
+            ],
         )
 
     async def vote(self):
@@ -1088,6 +1095,9 @@ async def maitre(game, phase="night", synchro=0):
     if not maitre:
         return None
     vampire = game._get_player_nick(["vampire", "le comte"])
+    if not vampire:
+        return None
+
     if isinstance(vampire, str):
         vampire = [vampire]
     vampire.extend(
@@ -1139,8 +1149,29 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
 
 @Game.add_role("pestiféré")
 async def pestifere(game, phase="night", synchro="0"):
-    # XXX
-    pass
+    """Pestifere power
+
+    If phase is day, return players that cannot win.
+    """
+    if phase == "dawn":
+        pestif = game._get_player_nick(["pestiféré"])
+        if not pestif:
+            return None
+        msg = "Qui veux-tu contaminer en echangeant sa marque ?"
+        await notify_player(pestif, msg, game.bot)
+        choice = get_choice(pestif, game.players[3:], game.bot)
+        game.token_swaps.append((synchro, "peste", choice))
+
+    if phase == "day":
+        pest = next(k for k, v in game.tokens.items() if v == "peste")
+        infected = [nick for nick, vote in game.votes.items() if vote == pest]
+        msg = (
+            "Les joueurs {} ont votés pour la personne contaminée par "
+            "la peste et ne peuvent donc gagner."
+        ).format("et ".join(infected))
+        if infected:
+            game.fire_and_forget(notify_player(None, msg, game.bot))
+        return infected
 
 
 @Game.add_role("prêtre")
