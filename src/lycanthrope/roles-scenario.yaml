@@ -127,6 +127,7 @@ characters:
             Connait la victime des vampires. De plus, il échange sa marque
             contre celle de la chauve souris à la fin de son tour.
         order: -6C
+        synchro: -6C
         group: vampires
     sbire:
         description: >
@@ -347,5 +348,61 @@ scenario:
                 - pestiféré
                 - comploteuse
                 - la chose
+        Echanges à gogo:
+            artefact: false
+            token: true
+            roles:
+                - vampire
+                - le comte
+                - gremlin
+                # - copycat
+                - sorcière
+                - voleur
+                - insomniaque
+                #- conservateur
+                - villageois
+                - chasseur
+        Pour le roi!:
+            artefact: false
+            token: true
+            roles:
+                - vampire
+                - le maître
+                - assassin
+                - prêtre
+                - divinateur
+                - garde du corps
+                - pestiféré
+                - renfield
+                - villageois
+        Monstres en pagaille:
+            artefact: false
+            token: true
+            min_player: 4
+            roles:
+                - vampire
+                - le comte
+                - le maître
+                - gremlin
+                - la chose
+                - comploteuse
+                - pestiféré
+                - trappeur
+                - renfield
+        Seul contre tous?:
+            artefact: false
+            token: true
+            min_player: 4
+            roles:
+                - le maître
+                # - copycat
+                - assassin
+                - tanneur
+                - sorcière
+                - chasseur de fantôme
+                - pestiféré
+                - renfield
+                - cupidon
+                - villageois
     bataille épique:
         Anarchie:
