@@ -122,6 +122,12 @@ characters:
     prêtre:
         description: Purifie en échangeant des marques.
         order: -2
+    renfield:
+        description: >
+            Connait la victime des vampires. De plus, il échange sa marque
+            contre celle de la chauve souris à la fin de son tour.
+        order: -6C
+        group: vampires
     sbire:
         description: >
             Ce joueur fait parti de la meute de loups garous.

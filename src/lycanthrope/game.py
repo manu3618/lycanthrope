@@ -1247,9 +1247,16 @@ async def pretre(game, phase="night", synchro=-2):
 
 
 @Game.add_role("renfield")
-async def refield(game, phase="night", synchro=0):
-    # XXX
-    pass
+async def renfield(game, phase="night", synchro=0):
+    ren = game._get_player_nick(["renfield"])
+    if not ren or phase != "dawn":
+        return
+    vic = next(p for p, t in game.tokens.items() if t == "vampire")
+    msg = "La vicitme des vampire est {}."
+    if vic == "vampire":
+        msg = "Il n'y a pas victime de vampires."
+    game._fire_and_forget(notify_player(ren, msg, game.bot))
+    game.token_swaps.append((synchro, "chauve-souris", ren))
 
 
 @Game.add_role("sbire")
