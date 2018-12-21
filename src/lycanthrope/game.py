@@ -291,6 +291,8 @@ class Game:
         group_member = defaultdict(set)
         for group_name in groups:
             members = self._get_player_nick(groups[group_name])
+            if isinstance(members, str):
+                members = {members}
             group_member[group_name] = members if members else set()
         group_member["monstres"].update(
             group_member.get("loups garous", set())
@@ -824,7 +826,9 @@ async def chasseur(game, phase="night", synchro=0):
     await notify_player(chas, msg, game.bot)
     if not game.votes.get(chas) or game.votes[chas] in game.dead:
         msg = "Tu dois immédiatement tuer un joueur non mort."
-        alive = {player for player in game.players if player not in game.dead}
+        alive = {
+            player for player in game.players[3:] if player not in game.dead
+        }
         dead = await get_choice(chas, alive, game.bot)
         game.dead.add(dead)
         msg = "Dans un dernier élan de vie, le chasseur tue " + dead
