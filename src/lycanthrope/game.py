@@ -1246,6 +1246,12 @@ async def pretre(game, phase="night", synchro=-2):
         game.token_swaps.append((-2, choice, available_tokens.pop()))
 
 
+@Game.add_role("renfield")
+async def refield(game, phase="night", synchro=0):
+    # XXX
+    pass
+
+
 @Game.add_role("sbire")
 async def sbire(game, phase="night", synchro=0):
     """Execute sbire's turn.

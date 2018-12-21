@@ -256,6 +256,49 @@ scenario:
                 - cupidon
                 - pestiféré
                 - loup rêveur
+        Un terrible ennemi:
+            artefact: false
+            token: true
+            roles: [loup alpha, sorcière, chasseur, voleur, garde du corps,
+                    villageois, divinateur]
+        Ne te fie à personne:
+            artefact: false
+            token: false
+            roles:
+                - loup alpha
+                - loup rêveur
+                # - copycat
+                - tanneur
+                - voleur
+                - sorcière
+                - insomniaque
+                - loup garou
+                - gremlin
+                - voyante
+        Métamorphose maléfiques:
+            artefact: false
+            token: false
+            roles:
+                - loup alpha
+                - loup shaman
+                # - copycat
+                - loup rêveur
+                - voleur
+                - sorcière
+                - insomniaque
+                - loup garou
+                - gremlin
+                - voyante
+                # - conservateur
+                - chasseur de fantômes
+                - villageois
+        Sociétés secrètes:
+            artefact: false
+            token: true
+            min_player: 6
+            roles: [assassin, cupidon, comploteuse, loup garou,  loup alpha,
+                    chasseur de fantômes, franc maçon, franc maçon, prêtre,
+                    la chose, trappeur, voyante]
     vampires contre village:
         Nuit tombante:
             artefact: false
@@ -281,5 +324,22 @@ scenario:
                 - la chose
                 - comploteuse
                 - voleur
+        Marquons les:
+            artefact: false
+            token: true
+            roles:
+                - le comte
+                - le maître
+                - renfield
+                - trappeur
+                - assassin
+                - voleur
+                - prêtre
+                - cupidon
+                - gremlin
+                # - copycat
+                - pestiféré
+                - comploteuse
+                - la chose
     bataille épique:
         Anarchie:
