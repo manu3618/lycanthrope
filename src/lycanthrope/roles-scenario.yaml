@@ -79,6 +79,13 @@ characters:
         description: Regarde sa carte.
         order: 9
         synchro: 9
+    loup alpha:
+        description: >
+            En pus du rôle de loup garou classique, il contamine un autre
+            joueur convertissant ainsi son rôle en loup garou.
+        order: 2B
+        synchro: 2B
+        group: loups garous
     loup garou:
         description: >
             Le but des loup garou est de ne pas se faire détecter.

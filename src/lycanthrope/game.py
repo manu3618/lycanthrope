@@ -1053,8 +1053,18 @@ async def insomniaque(game, phase="night", synchro=0):
 
 @Game.add_role("loup alpha")
 async def loup_alpha(game, phase="night", synchro=0):
-    # XXX
-    pass
+    loup = game._get_nick_player(["loup alpha"], check_afraid=True)
+    if not loup:
+        pass
+    players = set(game.players[3:])
+    meute = game._get_player_nick(
+        ("loup alpha", "loup garou", "loup shaman"), check_afraid=True
+    )
+    players.difference_update(set(meute))
+    msg = "Quel joueur veux-tu convertir en loup garou ?"
+    await notify_player(loup, msg, game.bot)
+    choice = await get_choice(loup, players, game.bot)
+    game.current_roles[choice] = "loup garou"
 
 
 @Game.add_role("loup garou")
