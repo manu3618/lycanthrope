@@ -37,6 +37,7 @@ class Game:
         self.victories = Counter()
         self.bot = None
         self.in_progress = False
+        self.activated = set()  # set of player that made an action
         self.dealer = {}
         self.role_swaps = []  # list of tuple of exchanged roles.
         self.tokens = defaultdict(lambda: "clareté")
@@ -809,6 +810,7 @@ async def assassin(game, phase, synchro="-1"):
     await notify_player(assa, msg, game.bot)
     choice = await get_choice(assa, game.players[3:], game.bot)
     game.token_swaps.append((synchro, "assassin", choice))
+    game.activated.add(assa)
 
 
 @Game.add_role("chasseur")
@@ -829,7 +831,7 @@ async def chasseur(game, phase="night", synchro=0):
         game._fire_and_forget(notify_player(None, msg, game.bot))
 
 
-@Game.add_role("chasseur de fantôme")
+@Game.add_role("chasseur de fantômes")
 async def chasseur_fantome(game, phase="night", synchro=0):
     if phase != "night":
         return
@@ -846,6 +848,7 @@ async def chasseur_fantome(game, phase="night", synchro=0):
         if choice == "non":
             return
 
+        game.activated.add(cha)
         msg = "Quel joueur veux-tu regarder ?"
         choice = await get_choice(cha, players, game.bot)
         players.pop(choice)
@@ -871,6 +874,7 @@ async def chose(game, phase="night", synchro=0):
     if not chose:
         return
 
+    game.activated.add(chose)
     neigh = [player_li[(player_pos[chose] + i) % player_nb] for i in (-1, 1)]
     msg = "Tes voision sont {} et {}. Lequel veux-tu touccher ?".format(
         neigh[0], neigh[1]
@@ -880,7 +884,7 @@ async def chose(game, phase="night", synchro=0):
     neigh = [player_li[(player_pos[touched] + i) % player_nb] for i in (-1, 1)]
     msg = (
         "Tes voisins sont {} et {}, et l'un d'eux est la chose "
-        "et la chose t'astouché"
+        "et la chose t'as touché."
     ).format(neigh[0], neigh[1])
     game._fire_and_forget(notify_player(touched, msg, game.bot))
 
@@ -891,6 +895,7 @@ async def comte(game, phase="dawn", synchro="-6B"):
     if phase != "dawn" or not com:
         return
 
+    game.activated.add(com)
     players = set(game.players[3:])
     players.remove(com)
     msg = (
@@ -909,6 +914,7 @@ async def comploteuse(game, phase="dawn", synchro="-3"):
     comp = game._get_player_nick(["comploteuse"])
     if not comp:
         return
+    game.activated.add(comp)
     msg = "Contre qui va tu changer la marque du traitre ?"
     await notify_player(comp, msg, game.bot)
     choice = await get_choice(comp, game.player[:3], game.bot)
@@ -934,12 +940,25 @@ async def cupidon(game, phase="dawn", synchro="-4"):
     )
     if choice == "aucun":
         return
+    game.activated.add(cup)
     game.token_swaps.append((synchro, "amour 0", choice))
 
     msg = "Qui sera le deuxième aoureux?"
     await notify_player(cup, msg, game.bot)
     choice = await get_choice(cup, game.players[:3], game.bot)
     game.token_swaps.append((synchro, "amour 1", choice))
+
+
+@Game.add_role("diseuse de bonnes aventures")
+async def diseuse(game, phase="night", synchro=0):
+    diseuse = game._get_player_nick(["diseuse de bonnes aventures"])
+    if phase != "night" or not diseuse:
+        return
+    msg = (
+        "Les joueurs ayant consultés ou échangés un rôle ou une marque "
+        "sont {}."
+    ).format(", ".join(game.activated))
+    game._fire_and_forget(notify_player(diseuse, msg, game.bot))
 
 
 @Game.add_role("divinateur")
@@ -949,6 +968,7 @@ async def divinateur(game, phase="night", synchro=0):
     div = game._get_player_nick(["divinateur"], check_afraid=True)
     if not div:
         return
+    game.activated.add(div)
     msg = "Quel joueur veux-tu révéler ?"
     await notify_player(div, msg, game.bot)
     choice = await get_choice(div, game.players[3:], game.bot)
@@ -973,10 +993,12 @@ async def franc_macon(game, phase="night", synchro=0):
     if not frama:
         return
     elif isinstance(frama, list):
+        game.activated.update(set(frama))
         msg = "Il y a 2 franc-maçons ({}).".format(" et ".join(frama))
         for player in frama:
             game._fire_and_forget(notify_player(player, msg, game.bot))
     else:
+        game.activated.add(frama)
         msg = "Tu es le seul franc maçon."
         game._fire_and_forget(notify_player(frama, msg, game.bot))
 
@@ -1003,6 +1025,7 @@ async def gremlin(game, phase="night", synchro=0):
     grem = game._get_player_nick(["gremlin"])
     if not grem:
         return
+    game.activated.add(grem)
     players = set(game.players[3:])
     msg = "Veux-tu échanger des marques (jetons) ou des rôles ?"
     await notify_player(grem, msg, game.bot)
@@ -1028,6 +1051,12 @@ async def insomniaque(game, phase="night", synchro=0):
         await notify_player(player, msg, game.bot)
 
 
+@Game.add_role("loup alpha")
+async def loup_alpha(game, phase="night", synchro=0):
+    # XXX
+    pass
+
+
 @Game.add_role("loup garou")
 async def loup_garou(game, phase="night", synchro=0):
     if phase != "night":
@@ -1042,7 +1071,8 @@ async def loup_garou(game, phase="night", synchro=0):
 
     if not loups:
         return
-    if isinstance(loups, list):
+    game.activated.update(set(loups))
+    if len(loups) > 1:
         msg = "Les {} loups garous sont {}.".format(
             str(len(loups)), " et ".join(loups)
         )
@@ -1053,13 +1083,12 @@ async def loup_garou(game, phase="night", synchro=0):
             "Tu es le seul loup garou, indique une carte du milieu "
             "que tu veux découvrir. (0, 1 ou 2)"
         )
-        await notify_player(loups, msg, game.bot)
-        choice = await get_choice(loups, ("0", "1", "2"), game.bot)
-        await game.clean_up()
+        await notify_player(loups[0], msg, game.bot)
+        choice = await get_choice(loups[0], ("0", "1", "2"), game.bot)
         msg = "la carte {} est le rôle {}.".format(
             choice, game.initial_roles[choice]
         )
-        game._fire_and_forget(notify_player(loups, msg, game.bot))
+        game._fire_and_forget(notify_player(loups[0], msg, game.bot))
 
     if loup_reveur:
         msg = "Le loup rêveur est {}.".format(loup_reveur)
@@ -1080,6 +1109,7 @@ async def loup_shaman(game, phase="night", synchro=0):
     if not sham:
         return
 
+    game.activated.add(sham)
     msg = "Quelle carte veux-tu voir? "
     await notify_player(sham, msg, game.bot)
     choice = await get_choice(sham, game.players[3:], game.bot)
@@ -1127,6 +1157,7 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     if not noiseuse:
         return
 
+    game.activated.add(noiseuse)
     msg = (
         "Choisis les 2 personnes dont tu veux inverser les rôles.\n"
         "Première personne."
@@ -1157,6 +1188,7 @@ async def pestifere(game, phase="night", synchro="0"):
         pestif = game._get_player_nick(["pestiféré"])
         if not pestif:
             return None
+        game.activated.add(pestif)
         msg = "Qui veux-tu contaminer en echangeant sa marque ?"
         await notify_player(pestif, msg, game.bot)
         choice = get_choice(pestif, game.players[3:], game.bot)
@@ -1182,6 +1214,7 @@ async def pretre(game, phase="night", synchro=-2):
     if not pretre:
         return
 
+    game.activated.add(pretre)
     msg = "Contre quelle marque vas-tu échanger la tienne ?"
     await notify_player(pretre, msg, game.bot)
     available_tokens = {"clareté 0", "clareté 1"}
@@ -1216,11 +1249,16 @@ async def sbire(game, phase="night", synchro=0):
         loups = [loups]
 
     sbire = game._get_player_nick(["sbire"], check_afraid=True)
-    if sbire and loups:
+    if not sbire:
+        return
+    game.activated.add(sbire)
+    if loups:
         msg = "Il y a {} loups garous ({}).".format(
             len(loups), ", ".join(loups)
         )
-        game._fire_and_forget(notify_player(sbire, msg, game.bot))
+    else:
+        msg = "Il n'y a pas de loup garou."
+    game._fire_and_forget(notify_player(sbire, msg, game.bot))
 
 
 @Game.add_role("sorcière")
@@ -1236,6 +1274,7 @@ async def sorciere(game, phase="night", synchro=0):
     choice = await get_choice(sor, ["Non", "0", "1", "2"])
     if choice == "Non":
         return
+    game.activated.add(sor)
     msg = "Il s'agit du rôle de {}.".format(game.current_roles[choice])
     await notify_player(sor, msg, game.bot)
     msg = "A qui veux-tu faire endosser ce rôle ?"
@@ -1253,6 +1292,7 @@ async def soulard(game, phase="night", synchro=0):
     if not soulard:
         return
 
+    game.activated.add(soulard)
     msg = "Choisis la carte que tu veux echanger avec toi-même."
     await notify_player(soulard, msg, game.bot)
     choice = await get_choice(soulard, ("0", "1", "2"), game.bot)
@@ -1278,6 +1318,7 @@ async def trappeur(game, phase="night", synchro=0):
     choice = await get_choice(trap, ("oui", "non"), game.bot)
     req = "Quel joueur veux-tu consulter ?"
     if choice == "oui":
+        game.activated.add(trap)
         await notify_player(trap, req, game.bot)
         choice = await get_choice(trap, players, game.bot)
         msg = "{} est {}.".format(choice, game.current_roles[choice])
@@ -1288,6 +1329,7 @@ async def trappeur(game, phase="night", synchro=0):
     await notify_player(trap, msg, game.bot)
     choice = await get_choice(trap, ("oui", "non"), game.bot)
     if choice == "oui":
+        game.activated.add(trap)
         await notify_player(trap, req, game.bot)
         choice = await get_choice(trap, players, game.bot)
         msg = "{} est marqué de {}.".format(choice, game.tokens[choice])
@@ -1302,7 +1344,10 @@ async def vampire(game, phase="dawn", synchro=-6):
     vamp = game._get_player_nick(["vampire", "le comte", "le maître"])
     if not vamp:
         return
+    if isinstance(vamp, str):
+        vamp = [vamp]
 
+    game.activated.update(set(vamp))
     msg = (
         "Les vampires sont {}. \n"
         "Vous devez choisir qui mordre pour le transformer "
@@ -1340,6 +1385,8 @@ async def voleur(game, phase="night", synchro=0):
     voleur = game._get_player_nick(["voleur"], check_afraid=True)
     if not voleur:
         return
+
+    game.activated.add(voleur)
     msg = "Choisis quelle carte tu veux voler."
     await notify_player(voleur, msg, game.bot)
     choice = await get_choice(
@@ -1364,6 +1411,7 @@ async def voyante(game, phase="night", synchro=0):
     if not voyante:
         return
 
+    game.activated.add(voyante)
     msg = (
         "Quelle carte veux-tu voir? "
         "Si tu choisis une des cartes du milieu, tu pourras en regarder "

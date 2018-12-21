@@ -15,7 +15,7 @@ characters:
         order: # default: only awake during day
         group: villageois  # defautl: villageois
         synchro: # default: no synchornization needed
-    chasseur de fantôme:
+    chasseur de fantômes:
         description: >
             Il peut regarder jusqu'à 2 cartes. S'il tombe sur un loup garou,
             un vampire ou le tanneur, il prends son rôle.
@@ -35,7 +35,7 @@ characters:
         group: villageois
     le comte:
         description: >
-            Appartient au clan des vampires. Il échange la  marque d'un joueur
+            Appartient au clan des vampires. Il échange la marque d'un joueur
             avec la marque de peur.
             La marque de peur tétanise celui qui la possède.
             Pendant la nuit il ne recevra aucune information,
@@ -49,6 +49,11 @@ characters:
             marques d'amour.
         order: -4
         group: villageois
+    diseuse de bonnes aventures:
+        description: >
+            Reconnaît les personnes ayant agit pendant la nuit.
+        order: 7C
+        synchro: 7C
     divinateur:
         description: >
             Il peut retourner une carte qui devient alors visible de
@@ -206,8 +211,39 @@ scenario:
             token: false
             min_player: 4
             roles: [loup garou, loup rêveur, tanneur, voyante, voleur,
-                    chasseur de fantôme, insomniaque, gremlin, franc maçon,
+                    chasseur de fantômes, insomniaque, gremlin, franc maçon,
                     franc maçon, chasseur, loup shaman, villageois]
+        Les sages:
+            artefact: false
+            token: false
+            min_player: 4
+            roles: [loup garou, loup shaman, voyante, trappeur,
+                    chasseur de fantômes, insomniaque, sorcière, divinateur,
+                    gremlin, franc maçon, franc maçon, loup rêveur, voleur]
+        Mystérieux compagnons:
+            artefact: false
+            token: false
+            min_player: 6
+            roles: [loup garou, loup shaman, loup rêveur, chasseur, voyante,
+                    voleur, gremlin, franc maçon, franc maçon, la chose]
+        Fête d'Halloween:
+            artefact: false
+            token: true
+            min_player: 7
+            roles:
+                - la chose
+                - gremlin
+                # - copycat
+                - trappeur
+                - comploteuse
+                - loup alpha
+                - loup shaman
+                - chasseur de fantômes
+                - sorcière
+                - diseuse de bonnes aventures
+                - cupidon
+                - pestiférée
+                - loup rêveur
     vampires contre village:
         Nuit tombante:
             artefact: false
