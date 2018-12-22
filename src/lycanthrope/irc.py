@@ -7,10 +7,7 @@ from collections import defaultdict
 from contextlib import suppress
 from pprint import pformat
 
-import yaml
-
-# TODO: put in conf.
-
+# default connection arguments.
 CONNECTION_ARGS = {
     "server": "chat.freenode.net",
     "port": 6697,
@@ -104,8 +101,8 @@ class LycanthropeBot:
         game,
         roles=None,
         tokens=None,
+        connect_conf=CONNECTION_ARGS,
         loop=None,
-        config="./config.yaml",
         loglevel=logging.DEBUG,
         logfile="/tmp/lycanthrope.log",
     ):
@@ -136,8 +133,7 @@ class LycanthropeBot:
         self.logger = logging.getLogger()
 
         # IRCconnection
-        with open(config) as conf:
-            self.connect_param = yaml.load(conf.read())
+        self.connect_param = connect_conf
         self.loop = loop or asyncio.get_event_loop()
 
     def _connect(self):
