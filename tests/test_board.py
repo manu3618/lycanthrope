@@ -147,6 +147,19 @@ def test_unknown_scenario(game):
 SCENARIO = {
     "Anarchie": {"min_players": 3, "max_player": 10},
     "Classique": {"min_players": 3, "max_player": 10},
+    "Sociétés secrètes": {
+        "min_player": 6,
+        "mandatory": [
+            "assassin",
+            "cupidon",
+            "coploteuse",
+            "loup garou",
+            "loup alpha",
+            "chasseur defantôme",
+            "franc maçon",
+            "prêtre",
+        ],
+    },
 }
 
 
@@ -162,6 +175,16 @@ async def test_deal_scenario(scenario, constraints, game):
         for player in players:
             game.add_player(player)
         game.set_scenario(scenario)
+        if any(
+            [
+                len(players) < constraints.get("min_player", 3),
+                len(players) > constraints.get("max_player", 19),
+            ]
+        ):
+            with pytest.raises(ValueError):
+                game.deal_roles()
+            return
+
         game.deal_roles()
 
         try:

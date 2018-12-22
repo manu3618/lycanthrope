@@ -26,6 +26,18 @@ class Game:
     """
 
     _role_callbacks = {}
+    _initial_tokens = {
+        "assassin": "assassin",
+        "chauve-souris": "chauve-souris",
+        "peur": "peur",
+        "peste": "peste",
+        "clarté 0": "clarté",
+        "clarté 1": "clarté",
+        "vampire": "vampire",
+        "traitre": "traitre",
+        "amour 0": "amour",
+        "amour 1": "amour",
+    }
 
     def __init__(self):
         self.roles = []
@@ -41,20 +53,7 @@ class Game:
         self.dealer = {}
         self.role_swaps = []  # list of tuple of exchanged roles.
         self.tokens = defaultdict(lambda: "clareté")
-        self.tokens.update(
-            {
-                "assassin": "assassin",
-                "chauve-souris": "chauve-souris",
-                "peur": "peur",
-                "peste": "peste",
-                "clarté 0": "clarté",
-                "clarté 1": "clarté",
-                "vampire": "vampire",
-                "traitre": "traitre",
-                "amour 0": "amour",
-                "amour 1": "amour",
-            }
-        )
+        self.tokens.update(self._initial_tokens)
         self.victory_tree = victory_tree()
         self.scenario_dict = {}
         self.overall_max_nb = {}
@@ -184,13 +183,22 @@ class Game:
     def deal_roles(self):
         """Maps each player to a role."""
         roles = len(self.players)
+        scenar_constr = self.scenario_dict[self.scenario]
+        if any(
+            [
+                roles - 3 < scenar_constr.get("min_player", 3),
+                roles - 3 > scenar_constr.get("max_player", 19),
+            ]
+        ):
+            raise ValueError("Wrong number of players for this scenario.")
+
         selected_roles = self.dealer[self.scenario](roles)
         shuffle(selected_roles)
-
         self.initial_roles = dict(zip(self.players, selected_roles))
         self.current_roles = self.initial_roles.copy()
         self.dealt_roles = set(self.current_roles.values())
         self.tokens.update({player: "clareté" for player in self.players})
+        self.tokens.update(self._initial_tokens)
 
     async def notify_player_roles(self, initial=True):
         """Inform each player of its initial role.
@@ -1137,16 +1145,16 @@ async def maitre(game, phase="night", synchro=0):
     maitre = game._get_player_nick(["le maître"])
     if not maitre:
         return None
-    vampire = game._get_player_nick(["vampire", "le comte"])
-    if not vampire:
+    vamp = game._get_player_nick(["vampire", "le comte"])
+    if not vamp:
         return None
 
-    if isinstance(vampire, str):
-        vampire = [vampire]
-    vampire.extend(
+    if isinstance(vamp, str):
+        vamp = [vamp]
+    vamp.extend(
         [nick for nick, token in game.tokens.items() if token == "vampire"]
     )
-    if any(game.votes[player] == maitre for player in vampire):
+    if any(game.votes[player] == maitre for player in vamp):
         msg = "Le maître est protégé par un vampire."
         game.fire_and_forget(notify_player(None, msg, game.bot))
         return maitre
