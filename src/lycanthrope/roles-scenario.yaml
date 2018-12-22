@@ -440,4 +440,51 @@ scenario:
                 - insomniaque
                 - garde du corps
     bataille épique:
+        Destin croisés:
+            artefact: false
+            min_players: 4
+            token: true
+            roles: ["vampire", "le comte", "prêtre", "loup shaman",
+                    "loup garou", "voyante", "voleur", "sorcière", "gremlin",
+                    "cupidon", "trappeur"]
+        Lune de sang:
+            artefact: false
+            token: true
+            min_player: 5
+            roles: ["vampire", "le comte", "trappeur", "gremlin", "loup garou",
+                    "loup shaman", "voleur", "insomniaque", "chasseur",
+                    "cupidon", "prêtre"]
+        Du crépuscule jusqu'à l'aube:
+            artefact: false
+            token: true
+            min_player: 6
+            roles:
+                - vampire
+                - le maître
+                - gremlin
+                - assassin
+                - voleur
+                - loup shaman
+                - loup garou
+                - garde du corps
+                - voyante
+                - prêtre
+                - loup rêveur
+                - renfield
+        Dernier combat:
+            artefact: false
+            token: true
+            min_player: 8
+            roles: ["le maître", "vampire", "renfield", "trappeur",
+                    "divinateur", "sorcière", "loup aplha", "loup garou",
+                    "tanneur", "franc maçon", "franc maçon", "comploteuse",
+                    "diseuse de bonnes aventures"]
+        Bêtes traquées:
+            artefact: false
+            token: true
+            min_player: 4
+            roles: ["le maître", "loup alpha", "la chose", "voyante",
+                    "diseuse de bonnes aventures", "divinateur", "sorcière",
+                    "tanneur", "chasseur de fantômes", "renfield",
+                    "loup rêveur", "chasseur de fantôme", "pestiféré"]
         Anarchie:

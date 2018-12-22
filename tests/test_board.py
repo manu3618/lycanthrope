@@ -558,4 +558,9 @@ async def test_scenario(game, scenario, players):
                     # maxnumber of players reached
                     pass
             game.set_scenario(scenario)
+            try:
+                game.deal_roles()
+            except ValueError:
+                # not enough players
+                return
             await game.game()
