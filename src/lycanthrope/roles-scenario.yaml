@@ -404,5 +404,40 @@ scenario:
                 - renfield
                 - cupidon
                 - villageois
+        Les parias:
+            artefact: false
+            token: true
+            min_player: 6
+            roles:
+                - vampire
+                - le maître
+                - assassin
+                - tanneur
+                - comploteuse
+                - chasseur de fantôme
+                - franc maçon
+                - franc maçon
+                - pestiféré
+                - cupidon
+                # - copycat
+                - voyante
+                - trappeur
+        Les revenants:
+            artefact: false
+            min_player: 8
+            roles:
+                - vampire
+                - le compte
+                # - copycat
+                - renfield
+                - chasseur
+                - voyante
+                - voleur
+                - gremlin
+                - villageois
+                - franc maçon
+                - franc maçon
+                - insomniaque
+                - garde du corps
     bataille épique:
         Anarchie:
