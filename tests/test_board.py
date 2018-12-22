@@ -150,14 +150,15 @@ SCENARIO = {
 }
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("scenario,constraints", tuple(SCENARIO.items()))
-def test_deal_scenario(scenario, constraints, game):
+async def test_deal_scenario(scenario, constraints, game):
     """Test scenario deal.
     """
     for players in iter_name_lists(
         constraints.get("min_players", 3), constraints.get("max_players", 10)
     ):
-        game.players = [0, 1, 2]
+        game.__init__()
         for player in players:
             game.add_player(player)
         game.set_scenario(scenario)
@@ -169,6 +170,7 @@ def test_deal_scenario(scenario, constraints, game):
         except KeyError:
             # no explicit mandatory role
             pass
+        await game.clean_up()
 
 
 @pytest.mark.asyncio

@@ -163,11 +163,10 @@ class Game:
         """
         if len(self.players) >= sum(self.max_role_nb.values()):
             raise RuntimeWarning("Maximum number of players reached")
-        elif nick not in self.players:
-            self.players.append(nick)
-            self.tokens[nick] = "clarté"
-        else:
-            raise ValueError("Player's nickname already used.")
+        if nick in self.tokens:
+            raise ValueError("This nickname cannot be used.")
+        self.players.append(nick)
+        self.tokens[nick] = "clarté"
 
     def remove_player(self, nick):
         """Remove a  player from the game.
@@ -1145,7 +1144,7 @@ async def maitre(game, phase="night", synchro=0):
     if isinstance(vampire, str):
         vampire = [vampire]
     vampire.extend(
-        [nick for nick, token in game.tokens.values() if token == "vampire"]
+        [nick for nick, token in game.tokens.items() if token == "vampire"]
     )
     if any(game.votes[player] == maitre for player in vampire):
         msg = "Le maître est protégé par un vampire."
