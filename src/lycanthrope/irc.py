@@ -154,7 +154,7 @@ class LycanthropeBot:
         self._sock.send(msg.encode())
         if self.connect_param.get("chan"):
             msg = ("JOIN {chan}\r\n" "NOTICE {chan} :{msg}\r\n").format(
-                chan=self.connect_param["chan"], msg="I'm in da place!"
+                chan=self.connect_param["chan"], msg="Hello!"
             )
             self._sock.send(msg.encode())
 
@@ -354,12 +354,19 @@ async def role(bot, user, role=None, *args):
     if args:
         role = role + " " + args[0]
     try:
-        return pformat(bot.role[role])
+        descr = bot.role[role]
     except KeyError:
         msg = "usage: !role [role]\nroles: {}".format(
             ", ".join(bot.role.keys())
         )
         return msg
+    msg = ""
+    msg += descr.get("description", "")
+    if "group" in descr:
+        msg += "le {} appartient au groupe des {}\n".format(
+            role, descr["group"]
+        )
+    return msg
 
 
 @LycanthropeBot.register_cmd
@@ -369,15 +376,36 @@ async def token(bot, user, token=None, *args):
 
     Display token explanation. If none is provided, display token list.
     """
-    if args:
-        token = token + " " + args[0]
     try:
-        return pformat(bot.token[token])
+        return bot.token[token]
     except KeyError:
         msg = "usage: !token [token]\ntokens: {}".format(
             ", ".join(bot.token.keys())
         )
         return msg
+
+
+@LycanthropeBot.register_cmd
+async def order(bot, user, order=None, *args):
+    """
+    usage: !order
+
+    Display play order, restricted to distributed_roles.
+    """
+    if not bot.game:
+        return
+    available_roles = []
+    for role in bot.game.initial_roles.values():
+        elt = {"name": role}
+        elt.update(bot.role[role])
+        available_roles.append(elt)
+    available_roles.sort(key=lambda x: str(x.get("order", "100")))
+    lines = ["L'ordre dans lequel les rôles sont appelés est :"]
+    for num, role in enumerate(available_roles):
+        lines.append("{}. {}".format(num, role["name"]))
+    return "\n".join(lines)
+
+
 
 
 @LycanthropeBot.register_cmd
