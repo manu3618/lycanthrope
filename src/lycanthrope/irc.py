@@ -49,12 +49,15 @@ async def get_choice(player, choices, bot=None):
         player (string): nick of the player.
         choices (list or tuple or set): available choices.
     """
-    msg = "Tu dois choisir parmi les choix suivant: {}".format(", ".join(choices))
+    msg = "Tu dois choisir parmi les choix suivant: {}".format(
+        ", ".join(choices)
+    )
     await notify_player(player, msg, bot)
     choice = await read_chan(player, bot)
     while choice not in choices:
         msg = (
-            "Je n'ai pas compris. Tu dois choisir un et un seul des mots " "suvants: {}"
+            "Je n'ai pas compris. Tu dois choisir un et un seul des mots "
+            "suvants: {}"
         ).format(", ".join(choices))
         await notify_player(player, msg, bot)
         choice = await read_chan(player, bot)
@@ -137,7 +140,9 @@ class LycanthropeBot:
         self._sock = ssl.wrap_socket(plain_sock)
         self._sock.settimeout(10)
         self.info("connecting with parameters " + pformat(self.connect_param))
-        self._sock.connect((self.connect_param["server"], self.connect_param["port"]))
+        self._sock.connect(
+            (self.connect_param["server"], self.connect_param["port"])
+        )
         # self._sock.setblocking(False)
         if self.connect_param.get("password"):
             self._sock.send("PASS %s\r\n" % (self.connect_param["password"]))
@@ -211,7 +216,9 @@ class LycanthropeBot:
                     self.logger.debug("parsed msg: {}".format(str(parsed)))
                     if parsed["user"] in self.game.players:
                         await _buffer_privmsg(parsed["user"], parsed["msg"])
-                    asyncio.ensure_future(self.react(parsed["user"], parsed["msg"]))
+                    asyncio.ensure_future(
+                        self.react(parsed["user"], parsed["msg"])
+                    )
                     self.logger.debug("privmsgs buff:" + pformat(PRIVMSGS))
                 else:
                     self.logger.debug("RECV: " + msg)
@@ -287,7 +294,9 @@ async def ls(bot, *args):
     """
     list all available commands
     """
-    ret = "Available commands: {}".format(", ".join(sorted(bot._callbacks.keys())))
+    ret = "Available commands: {}".format(
+        ", ".join(sorted(bot._callbacks.keys()))
+    )
     return ret
 
 
@@ -314,7 +323,9 @@ async def addme(bot, user, *args):
     """
     with suppress(ValueError):
         bot.game.add_player(user)
-        await bot.send_to_chan("{} fait maintenant parti des joueurs".format(user))
+        await bot.send_to_chan(
+            "{} fait maintenant parti des joueurs".format(user)
+        )
 
 
 @LycanthropeBot.register_cmd
@@ -343,7 +354,9 @@ async def role(bot, user, role=None, *args):
     try:
         return pformat(bot.role[role])
     except KeyError:
-        msg = "usage: !role [role]\nroles: {}".format(", ".join(bot.role.keys()))
+        msg = "usage: !role [role]\nroles: {}".format(
+            ", ".join(bot.role.keys())
+        )
         return msg
 
 
@@ -361,7 +374,9 @@ async def stop(bot, user, *args):
     stop participation.
     """
     bot.game.remove_player(user)
-    await bot.send_to_chan("Les joueurs sont: " + ", ".join(bot.game.players[3:]))
+    await bot.send_to_chan(
+        "Les joueurs sont: " + ", ".join(bot.game.players[3:])
+    )
 
 
 @LycanthropeBot.register_cmd
@@ -372,7 +387,19 @@ async def remove(bot, user, nick, *args):
     remove the player from the game.
     """
     bot.game.remove_player(nick)
-    await bot.send_to_chan("Les joueurs sont: " + ", ".join(bot.game.players[3:]))
+    await bot.send_to_chan(
+        "Les joueurs sont: " + ", ".join(bot.game.players[3:])
+    )
+
+
+@LycanthropeBot.register_cmd
+async def random_scenario(bot, *args):
+    """
+    usage: !random_scenario
+
+    randomly change the scenario. Assume players are added.
+    """
+    await bot.game.set_random_scenario()
 
 
 @LycanthropeBot.register_cmd

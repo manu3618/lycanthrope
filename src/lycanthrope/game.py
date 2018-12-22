@@ -133,7 +133,7 @@ class Game:
         else:
             self.max_role_nb = self.overall_max_nb
 
-    def set_random_scenario(self):
+    async def set_random_scenario(self):
         """Randomly choose the scenario."""
         available_scenario = list(self.dealer.keys())
         shuffle(available_scenario)
@@ -145,12 +145,14 @@ class Game:
             except ValueError:
                 pass
 
-        self.notify_player(
-            None, "Le scenario choisi aléatoirement est {}".format(scenario)
-        )
-        self.notify_player(
-            None, "{}".format(self.scenario_list[scenario].get("description"))
-        )
+        distributed_roles = set(self.initial_distribution().values())
+        msgs = [
+            "Le scenario choisi aléatoirement est {}".format(scenario),
+            self.scenario_list[scenario].get("description", ""),
+            "Les roles distribués sont " + ", ".join(distributed_roles),
+        ]
+        for msg in msgs:
+            await self.notify_players(None, msg, self.bot)
 
     def add_player(self, nick):
         """Add the player <nick> to the game.
