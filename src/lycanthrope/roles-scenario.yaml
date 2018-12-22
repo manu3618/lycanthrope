@@ -170,6 +170,27 @@ characters:
             n'importe quel autre joueur ou de 2 cartes du centre.
         order: 5
 
+tokens:
+    assassin: >
+        L'assassin cible un joueur et échange sa marque contre la marque de
+        l'assassin. L'assassin gagne la partie uniquement si le joueur avec la
+        marque de l'assassin meur (peut importe à quelle équipe il appartient
+        et peut importe si l'assassin est encore en vie).
+    traître: Le traître ne gagne que si un membre de son équipe meurt.
+    amour: >
+        Délivrée par cupidon, elle lie les deux amoureux dans la mort. Si l'un
+        des amoureux meur, l'autre aussi.
+    peur: >
+        Tétanie le joueur qui en est marqué. Ce joueur ne peut alors plus rien
+        faire pendant la nuit.
+    peste: >
+        La pestiféré contamine avec la peste un autre joueur. Pendant le vote,
+        ceux ayant voté contre la personne contaminée ne peut gagner.
+    chauve-souris: Elle est délivrée par le renfield et n'a aucun effet.
+    vampire: >
+        Elle indique qui les vampires ont mordu. Ce joueur fait alors parti
+        du clan des vampires.
+    clareté: Elle indique que le joueur est pur.
 
 scenario:
     loups-garous contre village:

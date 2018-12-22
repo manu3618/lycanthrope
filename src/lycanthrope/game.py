@@ -39,7 +39,7 @@ class Game:
         "amour 1": "amour",
     }
 
-    def __init__(self):
+    def __init__(self, config_file="roles-scenario.yaml"):
         self.roles = []
         self.initial_roles = {}  # after doppelganger
         self.current_roles = {}
@@ -62,7 +62,8 @@ class Game:
 
         # initialize players with roles in the middle
         self.players = [str(num) for num in range(3)]
-        self.available_roles = get_roles("roles-scenario.yaml")
+        self.available_roles = get_roles(config_file)
+        self.available_tokens = get_token(config_file)
 
     @classmethod
     def add_role(cls, role):
@@ -1158,7 +1159,7 @@ async def maitre(game, phase="night", synchro=0):
     )
     if any(game.votes[player] == maitre for player in vamp):
         msg = "Le maître est protégé par un vampire."
-        game.fire_and_forget(notify_player(None, msg, game.bot))
+        game._fire_and_forget(notify_player(None, msg, game.bot))
         return maitre
     else:
         return None
@@ -1474,6 +1475,7 @@ def get_param(filename, param):
 
 get_roles = partial(get_param, param="characters")
 get_scenario = partial(get_param, param="scenario")
+get_token = partial(get_param, param="tokens")
 
 
 def max_dict(dicts):

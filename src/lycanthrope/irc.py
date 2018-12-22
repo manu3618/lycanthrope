@@ -103,6 +103,7 @@ class LycanthropeBot:
         self,
         game,
         roles=None,
+        tokens=None,
         loop=None,
         config="./config.yaml",
         loglevel=logging.DEBUG,
@@ -113,6 +114,7 @@ class LycanthropeBot:
         Args:
             game (lycanthrope.Game): the playable board.
             roles (dict): role descriptions.
+            tokens (dict): token description.
             config (str): path to config file containig IRC conf.
             loglevel (int): logging level.
             logfile (str): path to log file.
@@ -122,6 +124,10 @@ class LycanthropeBot:
             self.role = roles
         else:
             self.role = {}
+        if tokens is not None:
+            self.token = tokens
+        else:
+            self.token = {}
 
         self.send_queue = []
 
@@ -356,6 +362,24 @@ async def role(bot, user, role=None, *args):
     except KeyError:
         msg = "usage: !role [role]\nroles: {}".format(
             ", ".join(bot.role.keys())
+        )
+        return msg
+
+
+@LycanthropeBot.register_cmd
+async def token(bot, user, token=None, *args):
+    """
+    usage: !token [token]
+
+    Display token explanation. If none is provided, display token list.
+    """
+    if args:
+        token = token + " " + args[0]
+    try:
+        return pformat(bot.token[token])
+    except KeyError:
+        msg = "usage: !token [token]\ntokens: {}".format(
+            ", ".join(bot.token.keys())
         )
         return msg
 
