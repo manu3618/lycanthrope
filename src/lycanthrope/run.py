@@ -13,7 +13,7 @@ def argparser():
     parser.add_argument(
         "-n",
         "--nick",
-        dest="nick",
+        dest="nickname",
         default="lycanthrope_bot",
         help="bot's nickname",
     )

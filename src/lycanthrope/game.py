@@ -146,14 +146,14 @@ class Game:
             except ValueError:
                 pass
 
-        distributed_roles = set(self.initial_distribution().values())
+        distributed_roles = set(self.initial_roles.values())
         msgs = [
             "Le scenario choisi aléatoirement est {}".format(scenario),
-            self.scenario_list[scenario].get("description", ""),
+            self.scenario_dict[scenario].get("description", ""),
             "Les roles distribués sont " + ", ".join(distributed_roles),
         ]
         for msg in msgs:
-            await self.notify_players(None, msg, self.bot)
+            await notify_player(None, msg, self.bot)
 
     def add_player(self, nick):
         """Add the player <nick> to the game.

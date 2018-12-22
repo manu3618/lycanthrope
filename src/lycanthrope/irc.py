@@ -201,7 +201,7 @@ class LycanthropeBot:
                 self.logger.debug("stop waiting")
 
             if not line:
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
                 continue
 
             buf += line.decode()
@@ -452,6 +452,9 @@ def _safe_parse(msg):
         dict: {'user': user, 'msg': message}
     """
     if "PRIVMSG" in msg:
-        user = msg.split(":")[1].split("!")[0]
-        message = msg.split(":")[2].strip()
-        return {"user": user, "msg": message}
+        try:
+            user = msg.split(":")[1].split("!")[0]
+            message = msg.split(":")[2].strip()
+            return {"user": user, "msg": message}
+        except IndexError:
+            return None
