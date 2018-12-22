@@ -1155,7 +1155,11 @@ async def maitre(game, phase="night", synchro=0):
     if isinstance(vamp, str):
         vamp = [vamp]
     vamp.extend(
-        [nick for nick, token in game.tokens.items() if token == "vampire"]
+        [
+            nick
+            for nick, token in game.tokens.items()
+            if token == "vampire" and nick in game.players
+        ]
     )
     if any(game.votes[player] == maitre for player in vamp):
         msg = "Le maître est protégé par un vampire."
