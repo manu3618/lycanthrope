@@ -1474,7 +1474,7 @@ async def voyante(game, phase="night", synchro=0):
 
 def get_param(filename, param):
     with open(join(dirname(realpath(__file__)), filename)) as fp:
-        return yaml.load(fp.read()).get(param)
+        return yaml.load(fp.read(), Loader=yaml.SafeLoader).get(param)
 
 
 get_roles = partial(get_param, param="characters")
@@ -1515,4 +1515,4 @@ def total_max_role_nb(scenario):
 
 def victory_tree(filename="victory.yaml"):
     with open(join(dirname(realpath(__file__)), filename)) as fp:
-        return yaml.load(fp.read())
+        return yaml.load(fp.read(), Loader=yaml.SafeLoader)
