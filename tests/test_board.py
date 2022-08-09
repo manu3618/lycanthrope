@@ -6,10 +6,9 @@ from os.path import dirname, join, realpath
 from random import choice, randint
 
 import faker
+import lycanthrope
 import mock
 import pytest
-
-import lycanthrope
 from lycanthrope.game import get_scenario
 
 # Persistent file for IRC-base interactions
@@ -17,9 +16,9 @@ MOCK_IRC_FILE = tempfile.NamedTemporaryFile(prefix="lycanthrope-").name
 CONFIG_FILE = join(
     dirname(realpath(__file__)), "../src/lycanthrope/roles-scenario.yaml"
 )
-MAX_ROLE_NB = get_scenario(CONFIG_FILE)["loups-garous contre village"][
-    "Classique"
-]["max_nb"]
+MAX_ROLE_NB = get_scenario(CONFIG_FILE)["loups-garous contre village"]["Classique"][
+    "max_nb"
+]
 
 
 def test_init():
@@ -73,6 +72,7 @@ async def mock_notify_player(player, msg, bot):
         fd.write(" --> [{}]\t{}\n".format(player, msg))
 
 
+@pytest.mark.asyncio
 def test_add_duplicate_player(game):
     """Test addition of dupplicate players raise exception."""
     players = ["a", "a"]
@@ -166,8 +166,7 @@ SCENARIO = {
 @pytest.mark.asyncio
 @pytest.mark.parametrize("scenario,constraints", tuple(SCENARIO.items()))
 async def test_deal_scenario(scenario, constraints, game):
-    """Test scenario deal.
-    """
+    """Test scenario deal."""
     for players in iter_name_lists(
         constraints.get("min_players", 3), constraints.get("max_players", 10)
     ):
@@ -237,16 +236,10 @@ async def test_turns(players, run):
                 game.add_player(player)
             game.deal_roles()
             with open(MOCK_IRC_FILE, "a") as fd:
-                fd.write(
-                    "Initial distribution: {}\n".format(
-                        str(game.initial_roles)
-                    )
-                )
+                fd.write("Initial distribution: {}\n".format(str(game.initial_roles)))
 
             # execute turns
-            turn_names = [
-                name for name in game.__dir__() if name.endswith("_turn")
-            ]
+            turn_names = [name for name in game.__dir__() if name.endswith("_turn")]
             for turn_name in turn_names:
                 with open(MOCK_IRC_FILE, "a") as fd:
                     fd.write("----- TEST {} -----\n".format(turn_name))
@@ -275,17 +268,11 @@ async def test_night(players, run):
                 game.add_player(player)
             game.deal_roles()
             with open(MOCK_IRC_FILE, "a") as fd:
-                fd.write(
-                    "Initial distribution: {}\n".format(
-                        str(game.initial_roles)
-                    )
-                )
+                fd.write("Initial distribution: {}\n".format(str(game.initial_roles)))
 
             await game.night()
             with open(MOCK_IRC_FILE, "a") as fd:
-                fd.write(
-                    "Finale distribution: {}\n".format(str(game.current_roles))
-                )
+                fd.write("Finale distribution: {}\n".format(str(game.current_roles)))
 
             # clean up
             if game.tasks:
@@ -327,8 +314,8 @@ def distributions():
     base.update({"lg" + str(i): "loup garou" for i in range(2)})
     base.update({"fm" + str(i): "franc maçon" for i in range(2)})
 
-    for l in 3, 8:
-        for distr in combinations(base, l):
+    for le in 3, 8:
+        for distr in combinations(base, le):
             ret = center.copy()
             ret.update({name: base[name] for name in distr})
             yield ret
@@ -347,9 +334,7 @@ async def test_victory_happy_path(distribution):
             # init game
             game = lycanthrope.Game()
             real_players = [
-                player
-                for player in distribution
-                if player not in ("0", "1", "2")
+                player for player in distribution if player not in ("0", "1", "2")
             ]
 
             for player in real_players:
@@ -364,9 +349,7 @@ async def test_victory_happy_path(distribution):
                     game.dead = set()
 
                 with open(MOCK_IRC_FILE, "a") as fd:
-                    fd.write(
-                        "distribution:{}\n".format(str(game.current_roles))
-                    )
+                    fd.write("distribution:{}\n".format(str(game.current_roles)))
                     fd.write("dead:{}\n".format(game.dead))
                     fd.write("victory:{}\n".format(str(await game.victory())))
 
@@ -505,13 +488,9 @@ PLAYERS = [
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("players", PLAYERS)
-@pytest.mark.parametrize(
-    "scenario", ["Classique", "Première nuit", "Anarchie"]
-)
+@pytest.mark.parametrize("scenario", ["Classique", "Première nuit", "Anarchie"])
 async def test_victory_walker(game, players, scenario):
-    """Test victory walker.
-
-    """
+    """Test victory walker."""
     for player in players.get("roles", []):
         game.add_player(player)
     game.initial_roles = players.get("roles", {}).copy()

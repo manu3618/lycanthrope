@@ -11,7 +11,7 @@ from .irc import get_choice, notify_player
 
 
 class Game:
-    """Game
+    r"""Game
 
 
     /!\ players' nick must not change during the game.
@@ -118,8 +118,7 @@ class Game:
             self.dealer[name] = get_dealer(**params)
 
     def set_scenario(self, scenario="Classique"):
-        """Change actif scenario.
-        """
+        """Change actif scenario."""
         if scenario not in self.dealer:
             raise ValueError(
                 "'{}' not in available scenario ({})".format(
@@ -304,16 +303,10 @@ class Game:
             if isinstance(members, str):
                 members = {members}
             group_member[group_name] = members if members else set()
-        group_member["monstres"].update(
-            group_member.get("loups garous", set())
-        )
+        group_member["monstres"].update(group_member.get("loups garous", set()))
 
         # check vampire token
-        vamp = [
-            player
-            for player in self.players
-            if self.tokens[player] == "vampire"
-        ]
+        vamp = [player for player in self.players if self.tokens[player] == "vampire"]
         if vamp:
             for group_name in groups:
                 try:
@@ -374,7 +367,7 @@ class Game:
             self.tokens[s0], self.tokens[s1] = self.tokens[s1], self.tokens[s0]
 
     async def night(self):
-        """Perform night steps.
+        r"""Perform night steps.
 
         /!\ Assume roles are dealt.
         """
@@ -538,9 +531,7 @@ class Game:
         if victory[1]:
             for player in victory[1]:
                 self.victories[player] += 1
-        msg = "Voici le nombre de victoires: {}".format(
-            str(dict(self.victories))
-        )
+        msg = "Voici le nombre de victoires: {}".format(str(dict(self.victories)))
         await notify_player(None, msg, self.bot)
         await self.clean_up()
 
@@ -576,10 +567,7 @@ class Game:
             done, pending = await asyncio.wait(self.tasks, timeout=delay)
 
         if pending:
-            msg = (
-                r"/!\ Certains n'ont pas eu le temps de voter. "
-                "Tant pis pour eux."
-            )
+            msg = r"/!\ Certains n'ont pas eu le temps de voter. " "Tant pis pour eux."
             for tsk in pending:
                 tsk.cancel()
         self.tasks = []
@@ -588,9 +576,7 @@ class Game:
 
         protect_tasks, _ = await asyncio.wait(
             [
-                asyncio.ensure_future(
-                    self._role_callbacks[role](self, phase="day")
-                )
+                asyncio.ensure_future(self._role_callbacks[role](self, phase="day"))
                 for role in ("garde du corps", "le maître")
             ]
         )
@@ -608,9 +594,7 @@ class Game:
         elif len(results) > 1 and results[0][1] == results[1][1]:
 
             # Tie. 2nd vote:
-            choice = [
-                player for player, votes in results if votes == results[0][1]
-            ]
+            choice = [player for player, votes in results if votes == results[0][1]]
             msg = (
                 "Il y a égalité entre {}.\n"
                 "En cas de nouvelle égalité, il n'y aura pas de mort.\n"
@@ -627,9 +611,7 @@ class Game:
             self.tasks = []
             results = Counter(self.votes.values()).most_common()
 
-            if not results or (
-                len(results) > 2 and results[0][0] == results[1][1]
-            ):
+            if not results or (len(results) > 2 and results[0][0] == results[1][1]):
                 msg = "Il n'y a pas de mort cette nuit."
                 await notify_player(None, msg, self.bot)
             return
@@ -646,11 +628,7 @@ class Game:
         other players.
         """
         if choice is None:
-            choice = [
-                adv
-                for adv in self.players
-                if adv not in ("0", "1", "2", player)
-            ]
+            choice = [adv for adv in self.players if adv not in ("0", "1", "2", player)]
         msg = "Quelle personne veux-tu éliminer?"
         await notify_player(player, msg, self.bot)
         result = await get_choice(player, choice, self.bot)
@@ -804,9 +782,7 @@ async def amoureux(game, phase, synchro=""):
     if phase != "day":
         if any(x in game.dead for x in amoureux):
             game.dead.add(set(amoureux))
-            msg = "Les amoureux {} meurent ensemble.".format(
-                " et ".join(amoureux)
-            )
+            msg = "Les amoureux {} meurent ensemble.".format(" et ".join(amoureux))
             game._fire_and_forget(notify_player(None, msg, game.bot))
 
 
@@ -836,9 +812,7 @@ async def chasseur(game, phase="night", synchro=0):
     await notify_player(chas, msg, game.bot)
     if not game.votes.get(chas) or game.votes[chas] in game.dead:
         msg = "Tu dois immédiatement tuer un joueur non mort."
-        alive = {
-            player for player in game.players[3:] if player not in game.dead
-        }
+        alive = {player for player in game.players[3:] if player not in game.dead}
         dead = await get_choice(chas, alive, game.bot)
         game.dead.add(dead)
         msg = "Dans un dernier élan de vie, le chasseur tue " + dead
@@ -949,9 +923,7 @@ async def cupidon(game, phase="dawn", synchro="-4"):
         "personne amoureux."
     )
     await notify_player(cup, msg, game.bot)
-    choice = await get_choice(
-        cup, chain(["aucun"], game.players[:3]), game.bot
-    )
+    choice = await get_choice(cup, chain(["aucun"], game.players[:3]), game.bot)
     if choice == "aucun":
         return
     game.activated.add(cup)
@@ -969,8 +941,7 @@ async def diseuse(game, phase="night", synchro=0):
     if phase != "night" or not diseuse:
         return
     msg = (
-        "Les joueurs ayant consultés ou échangés un rôle ou une marque "
-        "sont {}."
+        "Les joueurs ayant consultés ou échangés un rôle ou une marque " "sont {}."
     ).format(", ".join(game.activated))
     game._fire_and_forget(notify_player(diseuse, msg, game.bot))
 
@@ -1025,9 +996,7 @@ async def garde(game, phase="day", synchro=0):
     if not garde:
         return None
     protected = game.votes[garde]
-    msg = "Il y a un garde du corps ({}). Il protège {}.".format(
-        garde, protected
-    )
+    msg = "Il y a un garde du corps ({}). Il protège {}.".format(garde, protected)
     game._fire_and_forget(notify_player(None, msg, game.bot))
     return protected
 
@@ -1058,9 +1027,7 @@ async def gremlin(game, phase="night", synchro=0):
 @Game.add_role("insomniaque")
 async def insomniaque(game, phase="night", synchro=0):
     if phase == "day":
-        player = next(
-            pl for pl, ro in game.initial_role.values() if ro == "insomiaque"
-        )
+        player = next(pl for pl, ro in game.initial_role.values() if ro == "insomiaque")
         msg = "Ton rôle est à présent {}.".format(game.current_roles[player])
         await notify_player(player, msg, game.bot)
 
@@ -1097,9 +1064,7 @@ async def loup_garou(game, phase="night", synchro=0):
         return
     game.activated.update(set(loups))
     if len(loups) > 1:
-        msg = "Les {} loups garous sont {}.".format(
-            str(len(loups)), " et ".join(loups)
-        )
+        msg = "Les {} loups garous sont {}.".format(str(len(loups)), " et ".join(loups))
         for player in loups:
             game._fire_and_forget(notify_player(player, msg, game.bot))
     elif not loup_reveur:
@@ -1109,9 +1074,7 @@ async def loup_garou(game, phase="night", synchro=0):
         )
         await notify_player(loups[0], msg, game.bot)
         choice = await get_choice(loups[0], ("0", "1", "2"), game.bot)
-        msg = "la carte {} est le rôle {}.".format(
-            choice, game.initial_roles[choice]
-        )
+        msg = "la carte {} est le rôle {}.".format(choice, game.initial_roles[choice])
         game._fire_and_forget(notify_player(loups[0], msg, game.bot))
 
     if loup_reveur:
@@ -1194,11 +1157,7 @@ async def noiseuse(game, phase="night", synchro=0, noiseuse=None):
     await notify_player(noiseuse, msg, game.bot)
     first = await get_choice(noiseuse, choice, game.bot)
 
-    choice = [
-        player
-        for player in game.players[3:]
-        if player not in (choice, noiseuse)
-    ]
+    choice = [player for player in game.players[3:] if player not in (choice, noiseuse)]
     msg = "Deuxième personne."
     await notify_player(noiseuse, msg, game.bot)
     second = await get_choice(noiseuse, choice, game.bot)
@@ -1294,9 +1253,7 @@ async def sbire(game, phase="night", synchro=0):
         return
     game.activated.add(sbire)
     if loups:
-        msg = "Il y a {} loups garous ({}).".format(
-            len(loups), ", ".join(loups)
-        )
+        msg = "Il y a {} loups garous ({}).".format(len(loups), ", ".join(loups))
     else:
         msg = "Il n'y a pas de loup garou."
     game._fire_and_forget(notify_player(sbire, msg, game.bot))
@@ -1399,9 +1356,7 @@ async def vampire(game, phase="dawn", synchro=-6):
         await notify_player(player, msg, game.bot)
 
     players = game.players[3:]
-    tasks = [
-        asyncio.ensure_future(get_choice(i, players, game.bot)) for i in vamp
-    ]
+    tasks = [asyncio.ensure_future(get_choice(i, players, game.bot)) for i in vamp]
 
     finished, _ = asyncio.wait(tasks)
     results = Counter(finished.result())
@@ -1466,9 +1421,7 @@ async def voyante(game, phase="night", synchro=0):
     if choice in ("0", "1", "2"):
         msg = "Quelle carte veux tu regarder?"
         choice = await get_choice(voyante, ("0", "1", "2"), game.bot)
-        msg = "Le role de {} est {}.".format(
-            choice, game.initial_roles[choice]
-        )
+        msg = "Le role de {} est {}.".format(choice, game.initial_roles[choice])
         game._fire_and_forget(notify_player(voyante, msg, game.bot))
 
 
@@ -1507,9 +1460,7 @@ def total_max_role_nb(scenario):
         scenario (list): list of scenario
     """
     perso_counts = [s["max_nb"] for s in scenario if s and "max_nb" in s]
-    perso_counts.extend(
-        [Counter(s["roles"]) for s in scenario if s and "roles" in s]
-    )
+    perso_counts.extend([Counter(s["roles"]) for s in scenario if s and "roles" in s])
     return max_dict(perso_counts)
 
 

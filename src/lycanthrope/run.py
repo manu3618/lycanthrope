@@ -6,9 +6,7 @@ from lycanthrope.irc import LycanthropeBot
 
 def argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-s", "--server", dest="server", default="chat.freenode.net"
-    )
+    parser.add_argument("-s", "--server", dest="server", default="chat.freenode.net")
     parser.add_argument("-p", "--port", dest="port", default=6697, type=int)
     parser.add_argument(
         "-n",
