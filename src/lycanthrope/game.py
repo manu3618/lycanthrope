@@ -592,7 +592,6 @@ class Game:
             msg = "Il n'y a pas de mort aujourd'hui."
             await notify_player(None, msg, self.bot)
         elif len(results) > 1 and results[0][1] == results[1][1]:
-
             # Tie. 2nd vote:
             choice = [player for player, votes in results if votes == results[0][1]]
             msg = (

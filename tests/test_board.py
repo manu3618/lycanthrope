@@ -4,11 +4,12 @@ from collections import Counter
 from itertools import combinations, product
 from os.path import dirname, join, realpath
 from random import choice, randint
+from unittest import mock
 
 import faker
-import lycanthrope
-import mock
 import pytest
+
+import lycanthrope
 from lycanthrope.game import get_scenario
 
 # Persistent file for IRC-base interactions
@@ -229,7 +230,6 @@ async def test_turns(players, run):
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
-
             # init game
             game = lycanthrope.Game()
             for player in players:
@@ -261,7 +261,6 @@ async def test_night(players, run):
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
-
             # init game
             game = lycanthrope.Game()
             for player in players:
@@ -289,7 +288,6 @@ async def test_votes(players, run):
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
-
             # init game
             game = lycanthrope.Game()
             for player in players:
@@ -330,7 +328,6 @@ async def test_victory_happy_path(distribution):
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
-
             # init game
             game = lycanthrope.Game()
             real_players = [
@@ -364,7 +361,6 @@ async def test_game(players, run):
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
-
             # init game
             game = lycanthrope.Game()
             for player in players:
@@ -385,7 +381,6 @@ async def test_assassin(players):
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
-
             # init game
             game = lycanthrope.Game()
             for player in players:
@@ -511,8 +506,7 @@ def iter_scenar_name(config_file=CONFIG_FILE):
     for family in get_scenario(CONFIG_FILE).values():
         if family is None:
             continue
-        for scenario in family.keys():
-            yield scenario
+        yield from family.keys()
 
 
 SCENARIOS = list(iter_scenar_name())
@@ -529,7 +523,6 @@ async def test_scenario(game, scenario, players):
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):
-
             for player in players:
                 try:
                     game.add_player(player)
