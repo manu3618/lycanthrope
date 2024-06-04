@@ -147,7 +147,7 @@ class Game:
 
         distributed_roles = set(self.initial_roles.values())
         msgs = [
-            "Le scenario choisi aléatoirement est {}".format(scenario),
+            f"Le scenario choisi aléatoirement est {scenario}",
             self.scenario_dict[scenario].get("description", ""),
             "Les roles distribués sont " + ", ".join(distributed_roles),
         ]
@@ -214,7 +214,7 @@ class Game:
         else:
             roles = self.current_roles
         for player in self.players[3:]:
-            msg = "Tu es {}".format(roles[player])
+            msg = f"Tu es {roles[player]}"
             self._fire_and_forget(notify_player(player, msg, self.bot))
 
     async def victory_walker(self, groups, state_name="start", winners=None):
@@ -453,7 +453,7 @@ class Game:
 
         # notify token
         for nick in self.players[3:]:
-            msg = "Tu possède la marque suivante: {}".format(self.tokens[nick])
+            msg = f"Tu possède la marque suivante: {self.tokens[nick]}"
             self._fire_and_forget(notify_player(nick, msg, self.bot))
         await self._role_callbacks["amoureux"](self, phase="night")
         await self.clean_up()
@@ -514,7 +514,7 @@ class Game:
             traitre_grp = self.available_roles[traitre[0]]["group"]
             traitre_grp_members = self._get_player_nick(groups[traitre_grp])
 
-            msg = "Il y avait un traire ({})".format(traitre[0])
+            msg = f"Il y avait un traire ({traitre[0]})"
             await notify_player(None, msg, self.bot)
 
             if any(x in self.dead for x in traitre_grp_members):
@@ -531,7 +531,7 @@ class Game:
         if victory[1]:
             for player in victory[1]:
                 self.victories[player] += 1
-        msg = "Voici le nombre de victoires: {}".format(str(dict(self.victories)))
+        msg = f"Voici le nombre de victoires: {str(dict(self.victories))}"
         await notify_player(None, msg, self.bot)
         await self.clean_up()
 
@@ -616,7 +616,7 @@ class Game:
             return
         else:
             self.dead = {results[0][0]}
-            msg = "Le village a décidé de tuer {}.".format(results[0][0])
+            msg = f"Le village a décidé de tuer {results[0][0]}."
 
     async def _vote(self, player, choice=None):
         """Collect vote for one player.
@@ -840,11 +840,11 @@ async def chasseur_fantome(game, phase="night", synchro=0):
         choice = await get_choice(cha, players, game.bot)
         players.pop(choice)
         role = game.current_roles[choice]
-        msg = "{} est {}.".format(choice, role)
+        msg = f"{choice} est {role}."
         await notify_player(cha, msg, game.bot)
 
         if "loup" in role or "vampire" in role or role == "tanneur":
-            msg = "Tu deviens toi-même un {}.".format(role)
+            msg = f"Tu deviens toi-même un {role}."
             game._fire_and_forget(notify_player(cha, msg, game.bot))
             game.current_roles[cha] = role
             return
@@ -957,7 +957,7 @@ async def divinateur(game, phase="night", synchro=0):
     await notify_player(div, msg, game.bot)
     choice = await get_choice(div, game.players[3:], game.bot)
     role = game.current_roles[choice]
-    msg = "{} est {}.".format(choice, role)
+    msg = f"{choice} est {role}."
     if "loup" in role or "vampire" in role or role in ("assassin", "tanneur"):
         notified = div
     else:
@@ -995,7 +995,7 @@ async def garde(game, phase="day", synchro=0):
     if not garde:
         return None
     protected = game.votes[garde]
-    msg = "Il y a un garde du corps ({}). Il protège {}.".format(garde, protected)
+    msg = f"Il y a un garde du corps ({garde}). Il protège {protected}."
     game._fire_and_forget(notify_player(None, msg, game.bot))
     return protected
 
@@ -1027,7 +1027,7 @@ async def gremlin(game, phase="night", synchro=0):
 async def insomniaque(game, phase="night", synchro=0):
     if phase == "day":
         player = next(pl for pl, ro in game.initial_role.values() if ro == "insomiaque")
-        msg = "Ton rôle est à présent {}.".format(game.current_roles[player])
+        msg = f"Ton rôle est à présent {game.current_roles[player]}."
         await notify_player(player, msg, game.bot)
 
 
@@ -1073,11 +1073,11 @@ async def loup_garou(game, phase="night", synchro=0):
         )
         await notify_player(loups[0], msg, game.bot)
         choice = await get_choice(loups[0], ("0", "1", "2"), game.bot)
-        msg = "la carte {} est le rôle {}.".format(choice, game.initial_roles[choice])
+        msg = f"la carte {choice} est le rôle {game.initial_roles[choice]}."
         game._fire_and_forget(notify_player(loups[0], msg, game.bot))
 
     if loup_reveur:
-        msg = "Le loup rêveur est {}.".format(loup_reveur)
+        msg = f"Le loup rêveur est {loup_reveur}."
         for players in loups:
             game._fire_and_forget(notify_player(player, msg, game.bot))
 
@@ -1099,7 +1099,7 @@ async def loup_shaman(game, phase="night", synchro=0):
     msg = "Quelle carte veux-tu voir? "
     await notify_player(sham, msg, game.bot)
     choice = await get_choice(sham, game.players[3:], game.bot)
-    msg = "Le role de {} est {}.".format(choice, game.initial_roles[choice])
+    msg = f"Le role de {choice} est {game.initial_roles[choice]}."
     game._fire_and_forget(notify_player(sham, msg, game.bot))
 
 
@@ -1272,7 +1272,7 @@ async def sorciere(game, phase="night", synchro=0):
     if choice == "Non":
         return
     game.activated.add(sor)
-    msg = "Il s'agit du rôle de {}.".format(game.current_roles[choice])
+    msg = f"Il s'agit du rôle de {game.current_roles[choice]}."
     await notify_player(sor, msg, game.bot)
     msg = "A qui veux-tu faire endosser ce rôle ?"
     await notify_player(sor, msg, game.bot)
@@ -1318,7 +1318,7 @@ async def trappeur(game, phase="night", synchro=0):
         game.activated.add(trap)
         await notify_player(trap, req, game.bot)
         choice = await get_choice(trap, players, game.bot)
-        msg = "{} est {}.".format(choice, game.current_roles[choice])
+        msg = f"{choice} est {game.current_roles[choice]}."
         players.remove(choice)
         await notify_player(trap, msg, game.bot)
 
@@ -1329,7 +1329,7 @@ async def trappeur(game, phase="night", synchro=0):
         game.activated.add(trap)
         await notify_player(trap, req, game.bot)
         choice = await get_choice(trap, players, game.bot)
-        msg = "{} est marqué de {}.".format(choice, game.tokens[choice])
+        msg = f"{choice} est marqué de {game.tokens[choice]}."
         players.remove(choice)
         await notify_player(trap, msg, game.bot)
 
@@ -1363,7 +1363,7 @@ async def vampire(game, phase="dawn", synchro=-6):
         "\n".join("{}: {}" for k, v in results.most_common())
     )
     new_vamp = results.most_common()[0][0]
-    msg = "Le joueur tranformé en vampire est {}".format(new_vamp)
+    msg = f"Le joueur tranformé en vampire est {new_vamp}"
     game.token_swaps((synchro, new_vamp, vampire))
 
 
@@ -1389,7 +1389,7 @@ async def voleur(game, phase="night", synchro=0):
         [player for player in game.players[3:] if player != voleur],
         game.bot,
     )
-    msg = "Ton nouveau rôle est {}".format(game.initial_roles[choice])
+    msg = f"Ton nouveau rôle est {game.initial_roles[choice]}"
     game._fire_and_forget(notify_player(voleur, msg, game.bot))
     return game.role_swaps.append((voleur, choice))
 
@@ -1414,13 +1414,13 @@ async def voyante(game, phase="night", synchro=0):
     )
     await notify_player(voyante, msg, game.bot)
     choice = await get_choice(voyante, game.players, game.bot)
-    msg = "Le role de {} est {}.".format(choice, game.initial_roles[choice])
+    msg = f"Le role de {choice} est {game.initial_roles[choice]}."
     await notify_player(voyante, msg, game.bot)
 
     if choice in ("0", "1", "2"):
         msg = "Quelle carte veux tu regarder?"
         choice = await get_choice(voyante, ("0", "1", "2"), game.bot)
-        msg = "Le role de {} est {}.".format(choice, game.initial_roles[choice])
+        msg = f"Le role de {choice} est {game.initial_roles[choice]}."
         game._fire_and_forget(notify_player(voyante, msg, game.bot))
 
 

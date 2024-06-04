@@ -57,7 +57,7 @@ async def mock_get_choice(player, choices, bot):
     await asyncio.sleep(randint(0, 10) / 100)
     cho = choice(list(choices))
     with open(MOCK_IRC_FILE, "a") as fd:
-        fd.write("- {} \tchoose \t{} \t({})\n".format(player, cho, choices))
+        fd.write(f"- {player} \tchoose \t{cho} \t({choices})\n")
     return cho
 
 
@@ -70,7 +70,7 @@ async def mock_notify_player(player, msg, bot):
     """
     await asyncio.sleep(randint(0, 10) / 100)
     with open(MOCK_IRC_FILE, "a") as fd:
-        fd.write(" --> [{}]\t{}\n".format(player, msg))
+        fd.write(f" --> [{player}]\t{msg}\n")
 
 
 @pytest.mark.asyncio
@@ -236,17 +236,17 @@ async def test_turns(players, run):
                 game.add_player(player)
             game.deal_roles()
             with open(MOCK_IRC_FILE, "a") as fd:
-                fd.write("Initial distribution: {}\n".format(str(game.initial_roles)))
+                fd.write(f"Initial distribution: {str(game.initial_roles)}\n")
 
             # execute turns
             turn_names = [name for name in game.__dir__() if name.endswith("_turn")]
             for turn_name in turn_names:
                 with open(MOCK_IRC_FILE, "a") as fd:
-                    fd.write("----- TEST {} -----\n".format(turn_name))
+                    fd.write(f"----- TEST {turn_name} -----\n")
                 ret = await getattr(game, turn_name)()
                 if ret:
                     with open(MOCK_IRC_FILE, "a") as fd:
-                        fd.write("- switches: {}\n".format(str(ret)))
+                        fd.write(f"- switches: {str(ret)}\n")
                 if game.tasks:
                     await asyncio.wait(game.tasks)
 
@@ -267,11 +267,11 @@ async def test_night(players, run):
                 game.add_player(player)
             game.deal_roles()
             with open(MOCK_IRC_FILE, "a") as fd:
-                fd.write("Initial distribution: {}\n".format(str(game.initial_roles)))
+                fd.write(f"Initial distribution: {str(game.initial_roles)}\n")
 
             await game.night()
             with open(MOCK_IRC_FILE, "a") as fd:
-                fd.write("Finale distribution: {}\n".format(str(game.current_roles)))
+                fd.write(f"Finale distribution: {str(game.current_roles)}\n")
 
             # clean up
             if game.tasks:
@@ -297,8 +297,8 @@ async def test_votes(players, run):
             await game.collect_votes(timeout=run / 10)
 
             with open(MOCK_IRC_FILE, "a") as fd:
-                fd.write("votes: {}\n".format(str(game.votes)))
-                fd.write("dead: {}\n".format(game.dead))
+                fd.write(f"votes: {str(game.votes)}\n")
+                fd.write(f"dead: {game.dead}\n")
 
             # clean up
             if game.tasks:
@@ -346,9 +346,9 @@ async def test_victory_happy_path(distribution):
                     game.dead = set()
 
                 with open(MOCK_IRC_FILE, "a") as fd:
-                    fd.write("distribution:{}\n".format(str(game.current_roles)))
-                    fd.write("dead:{}\n".format(game.dead))
-                    fd.write("victory:{}\n".format(str(await game.victory())))
+                    fd.write(f"distribution:{str(game.current_roles)}\n")
+                    fd.write(f"dead:{game.dead}\n")
+                    fd.write(f"victory:{str(await game.victory())}\n")
 
 
 @pytest.mark.asyncio
@@ -519,7 +519,7 @@ PLAYERS = [players for players in iter_name_lists(max_len=20)]
 async def test_scenario(game, scenario, players):
     """Run game for the scenario."""
     with open(MOCK_IRC_FILE, "a") as fd:
-        fd.write("\n===== TEST test_scenario ({}) =====\n".format(scenario))
+        fd.write(f"\n===== TEST test_scenario ({scenario}) =====\n")
 
     with mock.patch("lycanthrope.game.notify_player", new=mock_notify_player):
         with mock.patch("lycanthrope.game.get_choice", new=mock_get_choice):

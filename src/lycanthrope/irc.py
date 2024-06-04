@@ -63,7 +63,7 @@ async def get_choice(player, choices, bot=None):
 async def read_chan(player, bot):
     """Return the last message sent by a player."""
     if bot:
-        bot.logger.debug("read_chan({})".format(player))
+        bot.logger.debug(f"read_chan({player})")
         bot.logger.debug("privmsgs buff:" + pformat(PRIVMSGS))
         with await PRIVMSG_COND[player]:
             await PRIVMSG_COND[player].wait()
@@ -192,7 +192,7 @@ class LycanthropeBot:
             try:
                 self.logger.debug("waiting...")
                 line = self._sock.recv(1024)
-            except socket.timeout:
+            except TimeoutError:
                 self.logger.debug("stop waiting")
 
             if not line:
@@ -203,14 +203,14 @@ class LycanthropeBot:
             for msg in buf.split("\n"):
                 if not msg:
                     continue
-                self.logger.debug("recv {}".format(msg))
+                self.logger.debug(f"recv {msg}")
 
                 if msg.startswith("PING"):
-                    self._sock.send("PONG {}".format(msg).encode())
+                    self._sock.send(f"PONG {msg}".encode())
 
                 parsed = _safe_parse(msg)
                 if parsed:
-                    self.logger.debug("parsed msg: {}".format(str(parsed)))
+                    self.logger.debug(f"parsed msg: {str(parsed)}")
                     if parsed["user"] in self.game.players:
                         await _buffer_privmsg(parsed["user"], parsed["msg"])
                     asyncio.ensure_future(self.react(parsed["user"], parsed["msg"]))
@@ -226,7 +226,7 @@ class LycanthropeBot:
 
         When !command [<args>] is found, find the appropriate callback
         """
-        self.logger.debug("react({}, {})".format(user, message))
+        self.logger.debug(f"react({user}, {message})")
         if not message.startswith("!"):
             return
 
@@ -242,7 +242,7 @@ class LycanthropeBot:
         Args:
             msg (str): message to send
         """
-        self.logger.debug("send_to_chan({})".format(msg))
+        self.logger.debug(f"send_to_chan({msg})")
         line = "PRIVMSG {} :{}\r\n".format(self.connect_param["chan"], msg)
         self.logger.debug("queueing " + line)
         self.send_queue.append(line.encode())
@@ -254,11 +254,11 @@ class LycanthropeBot:
             user (str): the user
             msg (str): the message
         """
-        self.logger.debug("send_priv_msg({}, {})".format(user, msg))
+        self.logger.debug(f"send_priv_msg({user}, {msg})")
         if not msg:
             return
         for chunk in msg.split("\n"):
-            line = "PRIVMSG {} :{}\r\n".format(user, chunk)
+            line = f"PRIVMSG {user} :{chunk}\r\n"
             self.logger.debug("queueing " + line)
             self.send_queue.append(line.encode())
 
@@ -281,7 +281,7 @@ async def ping(bot, user="", message="", *args):
     usage !ping <message>
     answer: "pong <nick> <message>"
     """
-    return "pong {} {}".format(user, message)
+    return f"pong {user} {message}"
 
 
 @LycanthropeBot.register_cmd
@@ -316,7 +316,7 @@ async def addme(bot, user, *args):
     """
     with suppress(ValueError):
         bot.game.add_player(user)
-        await bot.send_to_chan("{} fait maintenant parti des joueurs".format(user))
+        await bot.send_to_chan(f"{user} fait maintenant parti des joueurs")
 
 
 @LycanthropeBot.register_cmd
@@ -329,8 +329,8 @@ async def kill(bot, user, message=None, *args):
     vote = message.strip()
     if vote in bot.game.players and not vote == user:
         bot.game.votes[user] = vote
-        return "Ton vote contre {} est bien pris en compte.".format(vote)
-    return "{} n'est pas un joueur valide.".format(vote)
+        return f"Ton vote contre {vote} est bien pris en compte."
+    return f"{vote} n'est pas un joueur valide."
 
 
 @LycanthropeBot.register_cmd
