@@ -6,6 +6,6 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [project]
-name = "lycantrhope"
+name = "lycanthrope"
 version = "0.0.1"
 requires-python = ">=3.8"
